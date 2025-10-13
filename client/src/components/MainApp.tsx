@@ -67,91 +67,21 @@ export default function MainApp() {
     };
   }, []);
   const [showPostModal, setShowPostModal] = useState(false);
-  const [showMatchResultModal, setShowMatchResultModal] = useState(false);
-  const [showMatchRequestModal, setShowMatchRequestModal] = useState(false);
   const [showChatScreen, setShowChatScreen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [selectedPlayer, setSelectedPlayer] = useState<User | null>(null);
   const [chatOpponent, setChatOpponent] = useState<User | null>(null);
   const [chatMatchId, setChatMatchId] = useState<string>('');
-  const [isNewChatMode, setIsNewChatMode] = useState(false); // true for 1:1 chat, false for match-based chat
-  const [isMatchRequesting, setIsMatchRequesting] = useState(false);
+  const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showProfileEditModal, setShowProfileEditModal] = useState(false);
-  const [showMatchHistoryModal, setShowMatchHistoryModal] = useState(false);
   const [showPointChargeModal, setShowPointChargeModal] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [commentInputs, setCommentInputs] = useState<{[postId: string]: string}>({});
   const [showComments, setShowComments] = useState<{[postId: string]: boolean}>({});
-  const [sortBy, setSortBy] = useState<'ntrp' | 'points' | 'distance'>('ntrp');
-  const [rankingSubTab, setRankingSubTab] = useState<'club' | 'individual'>('individual');
-  
-  // Geolocation hook for distance sorting
-  const { position: userPosition, requestPermission, hasPermission } = useGeolocation();
-  
-  // 안전한 숫자 변환 함수
-  const safeNumber = (value: string | number | undefined | null, defaultValue = 0): number => {
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const parsed = parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    }
-    return defaultValue;
-  };
-
-  // 정렬된 온라인 사용자 목록
-  const sortedOnlineUsers = [...onlineUsers].sort((a, b) => {
-    switch (sortBy) {
-      case 'ntrp':
-        const aNtrp = safeNumber(a.ntrp);
-        const bNtrp = safeNumber(b.ntrp);
-        // NTRP가 설정되지 않은 사용자는 뒤로
-        if (aNtrp === 0 && bNtrp !== 0) return 1;
-        if (bNtrp === 0 && aNtrp !== 0) return -1;
-        return bNtrp - aNtrp;
-      case 'points':
-        return safeNumber(b.points) - safeNumber(a.points);
-      case 'distance':
-        // 거리순 정렬 (Geolocation 기반)
-        if (!userPosition || !hasPermission) {
-          // 위치 정보가 없으면 지역 기반으로 정렬
-          if (a.region === appUser?.region && b.region !== appUser?.region) return -1;
-          if (b.region === appUser?.region && a.region !== appUser?.region) return 1;
-          return a.region.localeCompare(b.region);
-        }
-        
-        // 실제 거리 기반 정렬 (GPS 좌표 사용)
-        // 사용자별 저장된 위치가 있으면 실제 거리로 계산
-        const userLat = userPosition.latitude;
-        const userLon = userPosition.longitude;
-        
-        // MVP: 다른 사용자들의 위치 데이터가 없으므로 지역 중심 좌표로 근사
-        const getRegionCoords = (region: string) => {
-          const regionCoords: {[key: string]: {lat: number, lon: number}} = {
-            '서울': {lat: 37.5665, lon: 126.9780},
-            '부산': {lat: 35.1796, lon: 129.0756},
-            '대구': {lat: 35.8722, lon: 128.6014},
-            '인천': {lat: 37.4563, lon: 126.7052},
-            '경기': {lat: 37.4138, lon: 127.5183},
-            '강원': {lat: 37.8228, lon: 128.1555},
-          };
-          return regionCoords[region] || {lat: 37.5665, lon: 126.9780}; // 서울 기본값
-        };
-        
-        const aCoords = getRegionCoords(a.region);
-        const bCoords = getRegionCoords(b.region);
-        
-        const aDistance = calculateDistance(userLat, userLon, aCoords.lat, aCoords.lon);
-        const bDistance = calculateDistance(userLat, userLon, bCoords.lat, bCoords.lon);
-        
-        return aDistance - bDistance;
-      default:
-        return 0;
-    }
-  });
+  const [rankingSubTab, setRankingSubTab] = useState<'club' | 'individual'>('club');
 
   // Fetch other players (excluding current user)
   const { 
@@ -194,16 +124,12 @@ export default function MainApp() {
   const userClubIds = clubMemberships.map(m => m.club.id);
   
   // Fetch actual club statistics from API
-  const { data: clubStats, loading: clubStatsLoading } = useQuery({
+  const { data: clubStats, isLoading: clubStatsLoading } = useQuery({
     queryKey: ['user-club-stats', appUser?.id, userClubIds],
     queryFn: async () => {
       if (!appUser?.id || userClubIds.length === 0) return null;
       
-      const response = await fetch(`/api/clubs/${userClubIds[0]}/user/${appUser.id}/stats`, {
-        headers: {
-          'Authorization': `Bearer ${await appUser.getIdToken?.()}`
-        }
-      });
+      const response = await fetch(`/api/clubs/${userClubIds[0]}/user/${appUser.id}/stats`);
       
       if (!response.ok) throw new Error('Failed to fetch club stats');
       return response.json();
@@ -233,95 +159,6 @@ export default function MainApp() {
     window.location.hash = tab;
   };
 
-  const handleMatchRequest = async (targetId: string) => {
-    const targetPlayer = onlineUsers.find(p => p.id === targetId);
-    if (!targetPlayer) return;
-    
-    setSelectedPlayer(targetPlayer);
-    setShowMatchRequestModal(true);
-  };
-
-  const handleConfirmMatchRequest = async () => {
-    if (!appUser || !selectedPlayer) return;
-    
-    setIsMatchRequesting(true);
-
-    try {
-      await requestMatch(appUser.id, selectedPlayer.id, 50);
-
-      toast({
-        title: "매칭 신청 완료",
-        description: `${selectedPlayer.username}님에게 매치를 신청했습니다. (테스트 버전 - 무료)`,
-      });
-      
-      setShowMatchRequestModal(false);
-      setSelectedPlayer(null);
-    } catch (error: any) {
-      console.error("Match request error:", error);
-      toast({
-        title: "매칭 신청 실패",
-        description: error.message || "다시 시도해주세요.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsMatchRequesting(false);
-    }
-  };
-
-  // 실시간 접속자와 채팅 시작
-  const handleStartChat = async (otherUserId: string) => {
-    try {
-      if (!appUser) return;
-      
-      const chatRoomId = await createOrFindChatRoom(otherUserId);
-      
-      // 채팅 상대방 찾기 (onlineUsers에서 먼저 찾고, 없으면 다른 목록에서)
-      let otherUser = onlineUsers.find(u => u.id === otherUserId) || 
-        players.find(p => p.id === otherUserId) || 
-        rankingUsers.find(u => u.id === otherUserId);
-      
-      if (!otherUser) {
-        // 플레이스홀더 사용자 생성 - 나중에 데이터 하이드레이션
-        otherUser = {
-          id: otherUserId,
-          username: "사용자",
-          email: "",
-          photoURL: null,
-          ntrp: "0.0",
-          region: "알 수 없음",
-          age: "0",
-          bio: null,
-          availableTimes: [],
-          points: 0,
-          wins: 0,
-          losses: 0,
-          mannerScore: 5,
-          mannerReviewsCount: 0,
-          mannerScoreSum: 0,
-          createdAt: new Date('2025-01-01'),
-          updatedAt: new Date('2025-01-01')
-        };
-      }
-      
-      // 채팅 화면 열기
-      setChatOpponent(otherUser as User);
-      setChatMatchId(chatRoomId);
-      setIsNewChatMode(true);
-      setShowChatScreen(true);
-      
-      toast({
-        title: "채팅방 입장",
-        description: `${otherUser.username}님과의 채팅을 시작합니다.`,
-      });
-    } catch (error: any) {
-      console.error("Chat start error:", error);
-      toast({
-        title: "채팅 시작 실패",
-        description: "채팅을 시작할 수 없습니다. 다시 시도해주세요.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleAcceptMatch = async (matchId: string) => {
     if (!appUser) return;
@@ -476,15 +313,6 @@ export default function MainApp() {
     setSelectedUserId(null);
   };
 
-  const handleCompleteMatch = (match: Match) => {
-    setSelectedMatch(match);
-    setShowMatchResultModal(true);
-  };
-
-  const handleCloseMatchResultModal = () => {
-    setShowMatchResultModal(false);
-    setSelectedMatch(null);
-  };
 
   const handleOpenChat = (match: Match) => {
     if (!appUser) return;
@@ -765,22 +593,13 @@ export default function MainApp() {
                         </div>
                       )}
                       {match.status === 'accepted' && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleOpenChat(match)}
-                            className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                            data-testid={`button-open-chat-${match.id}`}
-                          >
-                            💬 채팅
-                          </button>
-                          <button
-                            onClick={() => handleCompleteMatch(match)}
-                            className="bg-primary text-primary-foreground px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-                            data-testid={`button-complete-match-${match.id}`}
-                          >
-                            경기 완료
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleOpenChat(match)}
+                          className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                          data-testid={`button-open-chat-${match.id}`}
+                        >
+                          💬 채팅
+                        </button>
                       )}
                       {match.status === 'completed' && match.result && (
                         <div className="text-center">
@@ -1242,10 +1061,10 @@ export default function MainApp() {
                         <span>📊 총 {(() => {
                           const now = new Date();
                           const thisMonthMatches = allMatches.filter(match => {
-                            if (match.status !== 'completed' || !match.completedAt) return false;
-                            const completedDate = new Date(match.completedAt);
-                            return completedDate.getMonth() === now.getMonth() && 
-                                   completedDate.getFullYear() === now.getFullYear();
+                            if (match.status !== 'completed') return false;
+                            const createdDate = new Date(match.createdAt);
+                            return createdDate.getMonth() === now.getMonth() && 
+                                   createdDate.getFullYear() === now.getFullYear();
                           });
                           return thisMonthMatches.length;
                         })()}경기</span>
@@ -1253,10 +1072,10 @@ export default function MainApp() {
                           (() => {
                             const now = new Date();
                             const thisMonthMatches = allMatches.filter(match => {
-                              if (match.status !== 'completed' || !match.completedAt) return false;
-                              const completedDate = new Date(match.completedAt);
-                              return completedDate.getMonth() === now.getMonth() && 
-                                     completedDate.getFullYear() === now.getFullYear();
+                              if (match.status !== 'completed') return false;
+                              const createdDate = new Date(match.createdAt);
+                              return createdDate.getMonth() === now.getMonth() && 
+                                     createdDate.getFullYear() === now.getFullYear();
                             });
                             
                             if (thisMonthMatches.length === 0) return 0;
@@ -1287,18 +1106,6 @@ export default function MainApp() {
               <span className="flex items-center">
                 <i className="fas fa-user-edit w-6 mr-3 text-primary" />
                 프로필 수정
-              </span>
-              <i className="fas fa-chevron-right text-muted-foreground" />
-            </button>
-            
-            <button 
-              onClick={() => setShowMatchHistoryModal(true)}
-              className="w-full text-left p-4 bg-background rounded-xl border border-border flex justify-between items-center hover:bg-muted transition-colors" 
-              data-testid="button-match-history"
-            >
-              <span className="flex items-center">
-                <i className="fas fa-history w-6 mr-3 text-green-600" />
-                경기 기록
               </span>
               <i className="fas fa-chevron-right text-muted-foreground" />
             </button>
@@ -1402,32 +1209,6 @@ export default function MainApp() {
         onPostCreated={handlePostCreated}
       />
 
-      {/* Match Result Modal */}
-      <MatchResultModal
-        isOpen={showMatchResultModal}
-        onClose={handleCloseMatchResultModal}
-        match={selectedMatch}
-        currentUser={appUser!}
-        opponent={selectedMatch ? 
-          (rankingUsers.find(u => u.id === (selectedMatch.requesterId === appUser?.id ? selectedMatch.targetId : selectedMatch.requesterId)) || 
-           players.find(u => u.id === (selectedMatch.requesterId === appUser?.id ? selectedMatch.targetId : selectedMatch.requesterId)) || null) : null
-        }
-      />
-
-      {/* Match Request Modal */}
-      <MatchRequestModal
-        isOpen={showMatchRequestModal}
-        onClose={() => {
-          setShowMatchRequestModal(false);
-          setSelectedPlayer(null);
-          setIsMatchRequesting(false);
-        }}
-        onConfirm={handleConfirmMatchRequest}
-        targetUser={selectedPlayer}
-        currentUserPoints={appUser?.points || 0}
-        isLoading={isMatchRequesting}
-      />
-
       {/* Feedback Modal */}
       <FeedbackModal
         isOpen={showFeedbackModal}
@@ -1438,11 +1219,6 @@ export default function MainApp() {
       <ProfileEditModal 
         isOpen={showProfileEditModal} 
         onClose={() => setShowProfileEditModal(false)} 
-      />
-
-      <MatchHistoryModal 
-        isOpen={showMatchHistoryModal} 
-        onClose={() => setShowMatchHistoryModal(false)} 
       />
 
       <PointChargeModal 
@@ -1460,7 +1236,6 @@ export default function MainApp() {
         isOpen={showUserProfileModal} 
         onClose={handleCloseUserProfileModal}
         userId={selectedUserId}
-        onStartChat={handleStartChat}
       />
     </div>
   );
