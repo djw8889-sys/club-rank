@@ -27,7 +27,7 @@ import { useMyClubMembership } from "@/hooks/use-clubs";
 
 export default function MainApp() {
   const { appUser, logout } = useAuth();
-  const { requestMatch, acceptMatch, rejectMatch, deleteDocument, toggleLike, addComment } = useFirestore();
+  const { deleteDocument, toggleLike, addComment } = useFirestore();
   const { createOrFindChatRoom, chatRooms } = useChat();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -103,22 +103,6 @@ export default function MainApp() {
     loading: postsLoading
   } = useFirestoreCollection<Post>('posts', [], 'createdAt', 'desc');
 
-  // Fetch user's matches
-  const {
-    data: userMatches,
-    loading: userMatchesLoading
-  } = useFirestoreCollection<Match>('matches', [
-    { field: 'requesterId', operator: '==', value: appUser?.id || '' }
-  ], 'createdAt', 'desc');
-
-  // Also fetch matches where user is the target
-  const {
-    data: targetMatches,
-    loading: targetMatchesLoading
-  } = useFirestoreCollection<Match>('matches', [
-    { field: 'targetId', operator: '==', value: appUser?.id || '' }
-  ], 'createdAt', 'desc');
-
   // Fetch user's club matches for club statistics
   const { data: clubMemberships = [] } = useMyClubMembership();
   const userClubIds = clubMemberships.map(m => m.club.id);
@@ -145,57 +129,11 @@ export default function MainApp() {
   const clubMeetingsAttended = clubStats?.totalMatches || 0;
   const clubMeetingsMissed = Math.max(0, Math.floor(clubMeetingsAttended / 4)); // Estimate based on activity
 
-  // Combine both match lists
-  const allMatches = [...userMatches, ...targetMatches]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
-  // Combined loading state for matches
-  const matchesLoading = userMatchesLoading || targetMatchesLoading;
-
   const handleTabChange = (tab: string, header: string) => {
     setActiveTab(tab);
     setMainHeader(header);
     // URL 업데이트 (hash 사용)
     window.location.hash = tab;
-  };
-
-
-  const handleAcceptMatch = async (matchId: string) => {
-    if (!appUser) return;
-
-    try {
-      await acceptMatch(matchId);
-      toast({
-        title: "매치 수락 완료",
-        description: "경기 준비가 완료되었습니다! (테스트 버전 - 무료)",
-      });
-    } catch (error: any) {
-      console.error("Accept match error:", error);
-      toast({
-        title: "매치 수락 실패",
-        description: error.message || "다시 시도해주세요.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRejectMatch = async (matchId: string) => {
-    if (!appUser) return;
-
-    try {
-      await rejectMatch(matchId);
-      toast({
-        title: "매치 거절 완료",
-        description: "매치 요청을 거절했습니다. (테스트 버전 - 무료)",
-      });
-    } catch (error: any) {
-      console.error("Reject match error:", error);
-      toast({
-        title: "매치 거절 실패",
-        description: error.message || "다시 시도해주세요.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleDeletePost = async (postId: string, authorId: string) => {
@@ -435,189 +373,6 @@ export default function MainApp() {
           </div>
         </div>
 
-        {/* Removed old Chat List Tab content */}
-        <div className={`tab-content ${activeTab === 'chat-list-tab' ? 'active' : 'hidden'}`} style={{display: 'none'}}>
-          {/* Chat Rooms Section */}
-          {chatRooms.length > 0 && (
-            <div className="p-4 border-b border-border">
-              <h3 className="font-semibold text-foreground mb-3 flex items-center">
-                <i className="fas fa-comments mr-2 text-primary" />
-                1:1 채팅 ({chatRooms.length})
-              </h3>
-              <div className="space-y-3">
-                {chatRooms.map((chatRoom) => {
-                  // Find the other participant
-                  const otherParticipantId = chatRoom.participants.find(id => id !== appUser?.id);
-                  const otherParticipant = players.find(p => p.id === otherParticipantId) ||
-                    rankingUsers.find(u => u.id === otherParticipantId);
-                  
-                  return (
-                    <div 
-                      key={chatRoom.id}
-                      className="bg-background rounded-xl p-4 border border-border hover:bg-muted transition-colors cursor-pointer"
-                      onClick={() => {
-                        if (otherParticipant) {
-                          setChatOpponent(otherParticipant);
-                          setChatMatchId(chatRoom.id);
-                          setIsNewChatMode(true);
-                          setShowChatScreen(true);
-                        }
-                      }}
-                      data-testid={`chat-room-${chatRoom.id}`}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <img 
-                          src={otherParticipant?.photoURL || "https://source.boringavatars.com/beam/120/unknown?colors=264653,2a9d8f,e9c46a,f4a261,e76f51"} 
-                          alt={otherParticipant?.username || "Unknown"} 
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold text-foreground" data-testid={`text-chat-participant-${chatRoom.id}`}>
-                              {otherParticipant?.username || "Unknown User"}
-                            </p>
-                            {chatRoom.lastMessageAt && (
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(chatRoom.lastMessageAt).toLocaleDateString('ko-KR', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </span>
-                            )}
-                          </div>
-                          {chatRoom.lastMessage && (
-                            <p className="text-sm text-muted-foreground truncate">{chatRoom.lastMessage}</p>
-                          )}
-                          {otherParticipant && (
-                            <p className="text-xs text-muted-foreground">NTRP {otherParticipant.ntrp}</p>
-                          )}
-                        </div>
-                        <i className="fas fa-chevron-right text-muted-foreground" />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Matches Section */}
-          <div className="p-4">
-            <h3 className="font-semibold text-foreground mb-3 flex items-center">
-              <i className="fas fa-trophy mr-2 text-accent" />
-              매치 목록 ({allMatches.length})
-            </h3>
-            {matchesLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <LoadingSpinner size="lg" />
-                <p className="text-muted-foreground text-sm">매치 목록을 불러오는 중...</p>
-              </div>
-            ) : allMatches.length === 0 ? (
-              <p className="text-center text-muted-foreground pt-10" data-testid="text-no-matches">
-                아직 매치가 없습니다.<br />
-                플레이어 탭에서 매치를 신청해보세요!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {allMatches.map((match) => {
-                const isRequester = match.requesterId === appUser?.id;
-                const opponentId = isRequester ? match.targetId : match.requesterId;
-                const opponent = rankingUsers.find(u => u.id === opponentId) || 
-                  players.find(u => u.id === opponentId);
-                
-                const statusColors = {
-                  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                  accepted: 'bg-blue-100 text-blue-800 border-blue-200',
-                  completed: 'bg-green-100 text-green-800 border-green-200',
-                  rejected: 'bg-red-100 text-red-800 border-red-200'
-                };
-
-                const statusText = {
-                  pending: isRequester ? '대기중' : '응답 필요',
-                  accepted: '수락됨',
-                  completed: '완료',
-                  rejected: '거절됨'
-                };
-
-                return (
-                  <div 
-                    key={match.id}
-                    className="bg-background rounded-xl p-4 border border-border hover:bg-muted transition-colors"
-                    data-testid={`match-${match.id}`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <img 
-                        src={getAvatarSrc(opponent?.photoURL, opponent, 120)} 
-                        alt={opponent?.username || "Unknown"} 
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="font-semibold text-foreground" data-testid={`text-match-opponent-${match.id}`}>
-                            {opponent?.username || "Unknown User"}
-                          </p>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColors[match.status]}`}>
-                            {statusText[match.status]}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          NTRP {opponent?.ntrp || '?'} • {match.pointsCost}P
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(match.createdAt).toLocaleDateString('ko-KR', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                      {match.status === 'pending' && !isRequester && (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleAcceptMatch(match.id)}
-                            className="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
-                            data-testid={`button-accept-match-${match.id}`}
-                          >
-                            수락
-                          </button>
-                          <button
-                            onClick={() => handleRejectMatch(match.id)}
-                            className="bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
-                            data-testid={`button-reject-match-${match.id}`}
-                          >
-                            거절
-                          </button>
-                        </div>
-                      )}
-                      {match.status === 'accepted' && (
-                        <button
-                          onClick={() => handleOpenChat(match)}
-                          className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                          data-testid={`button-open-chat-${match.id}`}
-                        >
-                          💬 채팅
-                        </button>
-                      )}
-                      {match.status === 'completed' && match.result && (
-                        <div className="text-center">
-                          <p className="text-xs font-medium">
-                            {match.result === 'draw' ? '무승부' : 
-                             (match.result === 'requester_won' && isRequester) || 
-                             (match.result === 'target_won' && !isRequester) ? '승리 🏆' : '패배 😔'}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Ranking Tab */}
         <div className={`tab-content ${activeTab === 'ranking-tab' ? 'active' : 'hidden'}`}>
@@ -994,24 +749,15 @@ export default function MainApp() {
             </div>
           </div>
 
-          {/* Personal Match Records Summary */}
+          {/* Club Records Summary */}
           <div className="p-4">
             <div className="bg-background rounded-xl border border-border p-4">
               <h3 className="font-semibold mb-4 flex items-center">
                 <i className="fas fa-chart-pie mr-2 text-primary" />
-                개인 전적 요약
+                클럽 활동 요약
               </h3>
               
               <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-600" data-testid="text-individual-wins">
-                    {allMatches.filter(match => 
-                      (match.requesterId === appUser.id && match.result === 'requester_won') ||
-                      (match.targetId === appUser.id && match.result === 'target_won')
-                    ).length}
-                  </div>
-                  <div className="text-xs text-muted-foreground">개인 매칭 승</div>
-                </div>
                 <div className="text-center">
                   <div className="text-lg font-bold text-blue-600" data-testid="text-club-meetings-attended">
                     {clubMeetingsAttended}
@@ -1024,24 +770,6 @@ export default function MainApp() {
                   </div>
                   <div className="text-xs text-muted-foreground">교류전 승</div>
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-red-600" data-testid="text-individual-losses">
-                    {allMatches.filter(match => 
-                      (match.requesterId === appUser.id && match.result === 'target_won') ||
-                      (match.targetId === appUser.id && match.result === 'requester_won')
-                    ).length}
-                  </div>
-                  <div className="text-xs text-muted-foreground">개인 매칭 패</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-600" data-testid="text-club-meetings-missed">
-                    {clubMeetingsMissed}
-                  </div>
-                  <div className="text-xs text-muted-foreground">클럽 모임 불참</div>
-                </div>
                 <div className="text-center">
                   <div className="text-lg font-bold text-gray-600" data-testid="text-club-matches-losses">
                     {clubMatchesLosses}
@@ -1052,41 +780,17 @@ export default function MainApp() {
 
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">이번 달 활동</span>
+                  <span className="text-muted-foreground">클럽 활동 통계</span>
                   <div className="flex space-x-4">
-                    {matchesLoading || clubStatsLoading ? (
+                    {clubStatsLoading ? (
                       <span>📊 로딩 중...</span>
                     ) : (
                       <>
-                        <span>📊 총 {(() => {
-                          const now = new Date();
-                          const thisMonthMatches = allMatches.filter(match => {
-                            if (match.status !== 'completed') return false;
-                            const createdDate = new Date(match.createdAt);
-                            return createdDate.getMonth() === now.getMonth() && 
-                                   createdDate.getFullYear() === now.getFullYear();
-                          });
-                          return thisMonthMatches.length;
-                        })()}경기</span>
+                        <span>📊 총 {clubMeetingsAttended}경기</span>
                         <span>🏆 승률 {
-                          (() => {
-                            const now = new Date();
-                            const thisMonthMatches = allMatches.filter(match => {
-                              if (match.status !== 'completed') return false;
-                              const createdDate = new Date(match.createdAt);
-                              return createdDate.getMonth() === now.getMonth() && 
-                                     createdDate.getFullYear() === now.getFullYear();
-                            });
-                            
-                            if (thisMonthMatches.length === 0) return 0;
-                            
-                            const wins = thisMonthMatches.filter(match => 
-                              (match.requesterId === appUser.id && match.result === 'requester_won') ||
-                              (match.targetId === appUser.id && match.result === 'target_won')
-                            ).length;
-                            
-                            return Math.round((wins / thisMonthMatches.length) * 100);
-                          })()
+                          clubMeetingsAttended > 0 
+                            ? Math.round((clubMatchesWins / clubMeetingsAttended) * 100)
+                            : 0
                         }%</span>
                       </>
                     )}
