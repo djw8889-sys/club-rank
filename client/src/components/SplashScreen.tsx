@@ -31,7 +31,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       
       <div className="text-center z-10">
         <div className="text-8xl mb-6">🎾</div>
-        <h1 className="text-5xl font-bold text-white mb-4">클럽 랭크</h1>
+        <h1 className="text-5xl font-bold text-white mb-4">ClubRank</h1>
         <p className="text-emerald-100 text-lg font-medium">데이터로 증명하는 우리 동네 최강 클럽</p>
         <div className="mt-8">
           <div className="loading-spinner mx-auto border-white border-t-emerald-200" />

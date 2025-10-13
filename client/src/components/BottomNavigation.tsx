@@ -6,14 +6,13 @@ interface BottomNavigationProps {
 export default function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
   const tabs = [
     { id: 'my-club-tab', header: '내 클럽', icon: '🏠', label: '내 클럽' },
-    { id: 'individual-matching-tab', header: '현재 접속 중인 플레이어', icon: '🎾', label: '개인 매칭' },
     { id: 'ranking-tab', header: '랭킹', icon: '🏆', label: '랭킹' },
     { id: 'community-tab', header: '커뮤니티', icon: '💬', label: '커뮤니티' },
     { id: 'my-info-tab', header: '내 정보', icon: '👤', label: '내 정보' },
   ];
 
   return (
-    <nav className="bg-background border-t border-border grid grid-cols-5 text-center sticky bottom-0" data-testid="bottom-navigation">
+    <nav className="bg-background border-t border-border grid grid-cols-4 text-center sticky bottom-0" data-testid="bottom-navigation">
       {tabs.map((tab) => (
         <button
           key={tab.id}

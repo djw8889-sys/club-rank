@@ -3,20 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { increment } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useFirestoreCollection, useFirestore } from "@/hooks/use-firebase";
-import { usePresence } from "@/hooks/use-presence";
-import { useOnlineUsers } from "@/hooks/use-online-users";
 import { useChat } from "@/hooks/use-chat";
 import { User, Post, Match } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { calculateTier, getTierProgress } from "@/utils/tierCalculator";
 import { getAvatarSrc } from "@/utils/avatar";
-import PlayerCard from "./PlayerCard";
 import BottomNavigation from "./BottomNavigation";
 import LoadingSpinner from "./LoadingSpinner";
 import PostCreateModal from "./PostCreateModal";
-import MatchResultModal from "./MatchResultModal";
-import MatchRequestModal from "./MatchRequestModal";
 import ChatScreen from "./ChatScreen";
 import TierProgressCard from "./TierProgressCard";
 import AdminPanel from "./AdminPanel";
@@ -24,19 +19,15 @@ import AdminPromotion from "./AdminPromotion";
 import FeedbackModal from "./FeedbackModal";
 import ClubRankLogo from "./ClubRankLogo";
 import ProfileEditModal from "./ProfileEditModal";
-import MatchHistoryModal from "./MatchHistoryModal";
 import PointChargeModal from "./PointChargeModal";
 import ShopModal from "./ShopModal";
 import UserProfileModal from "./UserProfileModal";
 import MyClubTabContent from "./MyClubTabContent";
-import { useGeolocation, calculateDistance } from "@/hooks/use-geolocation";
 import { useMyClubMembership } from "@/hooks/use-clubs";
 
 export default function MainApp() {
   const { appUser, logout } = useAuth();
   const { requestMatch, acceptMatch, rejectMatch, deleteDocument, toggleLike, addComment } = useFirestore();
-  const { onlineUsers: presenceUsers } = usePresence();
-  const { onlineUsers, loading: onlineUsersLoading, refresh: refreshOnlineUsers } = useOnlineUsers();
   const { createOrFindChatRoom, chatRooms } = useChat();
   const { toast } = useToast();
   const [location, setLocation] = useLocation();
@@ -46,7 +37,6 @@ export default function MainApp() {
   // 탭 ID와 헤더 매핑
   const tabConfig = {
     'my-club-tab': '내 클럽',
-    'individual-matching-tab': '현재 접속 중인 플레이어',
     'ranking-tab': '랭킹',
     'community-tab': '커뮤니티',
     'my-info-tab': '내 정보'
@@ -592,169 +582,7 @@ export default function MainApp() {
           <MyClubTabContent />
         </div>
 
-        {/* Individual Matching Tab */}
-        <div className={`tab-content ${activeTab === 'individual-matching-tab' ? 'active' : 'hidden'}`}>
-          {/* Quick Stats */}
-          <div className="bg-background p-4 border-b border-border">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-primary" data-testid="text-stat-online-players">
-                  {onlineUsers.length}
-                </div>
-                <div className="text-xs text-muted-foreground">접속중인 플레이어</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse inline-block mr-1"></div>
-                  실시간
-                </div>
-                <div className="text-xs text-muted-foreground">실시간 매칭</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-accent">{appUser?.wins || 0}</div>
-                <div className="text-xs text-muted-foreground">총 승수</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 정렬 및 새로고침 */}
-          <div className="p-4 bg-background border-b border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <select 
-                  value={sortBy} 
-                  onChange={async (e) => {
-                    const value = e.target.value as 'ntrp' | 'points' | 'distance';
-                    if (value === 'distance' && !hasPermission) {
-                      await requestPermission();
-                    }
-                    setSortBy(value);
-                  }}
-                  className="p-2 border border-input rounded-lg bg-background text-sm focus:ring-2 focus:ring-ring" 
-                  data-testid="select-sort-online-users"
-                >
-                  <option value="ntrp">NTRP 순</option>
-                  <option value="points">포인트 순</option>
-                  <option value="distance">거리 순 {!hasPermission ? '📍' : '✅'}</option>
-                </select>
-                <span className="text-xs text-muted-foreground">
-                  {sortBy === 'ntrp' ? '높은 실력순' : sortBy === 'points' ? '높은 포인트순' : '거리 가까운 순'}
-                </span>
-              </div>
-              <button 
-                onClick={refreshOnlineUsers}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                title="목록 새로고침"
-                data-testid="button-refresh-online-users"
-              >
-                <i className="fas fa-sync-alt" />
-              </button>
-            </div>
-          </div>
-
-          {/* 실시간 접속자 목록 */}
-          <div className="p-4 space-y-4">
-            {onlineUsersLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <LoadingSpinner size="lg" />
-                <p className="text-muted-foreground text-sm">접속중인 플레이어를 불러오는 중...</p>
-              </div>
-            ) : sortedOnlineUsers.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <i className="fas fa-users text-2xl text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground mb-2" data-testid="text-no-online-players">
-                  현재 접속중인 플레이어가 없습니다
-                </p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  다른 플레이어들이 접속할 때까지 잠시만 기다려주세요
-                </p>
-                <button 
-                  onClick={refreshOnlineUsers}
-                  className="text-primary hover:text-primary/80 text-sm font-medium"
-                  data-testid="button-refresh-no-players"
-                >
-                  <i className="fas fa-sync-alt mr-1" />
-                  다시 확인하기
-                </button>
-              </div>
-            ) : (
-              sortedOnlineUsers.map((user) => (
-                <div 
-                  key={user.id}
-                  className="bg-background rounded-xl border border-border p-4 hover:bg-muted transition-colors cursor-pointer"
-                  data-testid={`online-player-card-${user.id}`}
-                >
-                  <div className="flex items-center space-x-4">
-                    {/* 프로필 이미지 */}
-                    <div className="relative">
-                      <img 
-                        src={getAvatarSrc(user.photoURL, user, 120)} 
-                        alt={user.username} 
-                        className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => handleUserProfileClick(user.id)}
-                        data-testid={`img-online-player-${user.id}`}
-                      />
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white animate-pulse" />
-                    </div>
-                    
-                    {/* 사용자 정보 */}
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 
-                          className="font-bold text-foreground cursor-pointer hover:text-primary transition-colors" 
-                          onClick={() => handleUserProfileClick(user.id)}
-                          data-testid={`text-online-player-name-${user.id}`}
-                        >
-                          {user.username}
-                        </h3>
-                        <span className="text-xs text-muted-foreground">{user.region}</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                          NTRP {user.ntrp}
-                        </span>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold ${calculateTier(user.points, user.wins, user.losses).color} ${calculateTier(user.points, user.wins, user.losses).bgColor}`}>
-                          <i className="fas fa-medal mr-1" />
-                          {calculateTier(user.points, user.wins, user.losses).name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          매너점수: {(user.mannerScore ?? 5).toFixed(1)}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-muted-foreground">
-                          {user.wins}승 {user.losses}패 • {user.points}P
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleStartChat(user.id)}
-                            className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-xs hover:bg-primary/90 transition-colors"
-                            data-testid={`button-chat-online-${user.id}`}
-                          >
-                            💬 1:1 채팅
-                          </button>
-                          <button
-                            onClick={() => handleMatchRequest(user.id)}
-                            className="bg-accent text-accent-foreground px-3 py-1 rounded-md text-xs hover:bg-accent/90 transition-colors"
-                            data-testid={`button-match-request-online-${user.id}`}
-                          >
-                            ⚾ 매치 신청
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Chat List Tab - Now showing both chat rooms and matches */}
+        {/* Individual Matching Tab - REMOVED */}
         {/* Club Search Tab */}
         <div className={`tab-content ${activeTab === 'club-search-tab' ? 'active' : 'hidden'}`}>
           <div className="bg-gradient-to-r from-primary to-emerald-600 p-6 text-white">

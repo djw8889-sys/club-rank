@@ -48,27 +48,39 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-white" data-testid="login-screen">
       {/* Hero section with logo */}
-      <div className="h-1/2 bg-gradient-to-br from-green-500 to-green-600 relative flex flex-col items-center justify-center">
+      <div className="h-1/2 bg-gradient-to-br from-primary via-lime-400 to-accent relative flex flex-col items-center justify-center overflow-hidden">
+        {/* Animated Tennis Balls Background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 text-6xl animate-bounce">🎾</div>
+          <div className="absolute top-20 right-20 text-4xl animate-pulse">🎾</div>
+          <div className="absolute bottom-20 left-20 text-5xl animate-bounce delay-100">🎾</div>
+        </div>
         <div className="text-center text-white">
           <ClubRankLogo size="xl" variant="white" className="mx-auto mb-6 bg-white/20" />
-          <h1 className="text-4xl font-bold mb-2">클럽 랭크</h1>
-          <p className="text-green-100 text-lg">우리 동호회를 위한 랭킹 시스템</p>
+          <h1 className="text-5xl font-black mb-3 tracking-tight drop-shadow-lg">ClubRank</h1>
+          <p className="text-white/90 text-xl font-medium">테니스 클럽 관리의 모든 것</p>
         </div>
       </div>
       
       <div className="flex-1 p-6 flex flex-col justify-center bg-white">
         <div className="space-y-4 mb-8">
-          <div className="flex items-center space-x-3 text-gray-600">
-            <i className="fas fa-users text-green-600" />
-            <span className="text-sm">클럽 간 교류전 & 랭킹</span>
+          <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-primary/10 to-transparent rounded-xl">
+            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
+              <i className="fas fa-users text-primary text-xl" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">클럽 간 교류전 & 랭킹</p>
+              <p className="text-xs text-muted-foreground">실시간 ELO 랭킹 시스템</p>
+            </div>
           </div>
-          <div className="flex items-center space-x-3 text-gray-600">
-            <i className="fas fa-map-marker-alt text-green-600" />
-            <span className="text-sm">정기 모임 & 대진표 자동 생성</span>
-          </div>
-          <div className="flex items-center space-x-3 text-gray-600">
-            <i className="fas fa-trophy text-green-600" />
-            <span className="text-sm">데이터 기반 클럽 관리</span>
+          <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-xl">
+            <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center">
+              <i className="fas fa-trophy text-accent text-xl" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">자동 대진표 & 통계</p>
+              <p className="text-xs text-muted-foreground">데이터 기반 클럽 관리</p>
+            </div>
           </div>
         </div>
         
@@ -76,7 +88,7 @@ export default function LoginScreen() {
           <Button 
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-4 rounded-xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]"
+            className="w-full bg-gradient-to-r from-primary to-lime-400 hover:from-lime-400 hover:to-primary text-accent font-bold py-4 rounded-2xl flex items-center justify-center shadow-2xl hover:shadow-primary/50 transition-all duration-300 hover:scale-105 transform"
             data-testid="button-google-login"
           >
             {loading ? (
