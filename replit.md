@@ -1,14 +1,15 @@
 # Overview
 
-Club Rank is a comprehensive club management and competition platform built with React, TypeScript, and Express.js. Originally Match Point (a tennis partner matching app), it has been transformed into a complete club management MVP that serves tennis clubs with advanced features for competition management, member coordination, and analytics.
+ClubRank is a comprehensive club management and competition platform built with React, TypeScript, and Express.js. Originally Match Point (a tennis partner matching app), it has been transformed into a club-centric management platform that serves tennis clubs with advanced features for inter-club competitions, member coordination, and analytics.
 
-The platform provides club identity customization, automated bracket generation, member management, inter-club competitions, and detailed analytics. It features a mobile-first design using Tailwind CSS and shadcn/ui components, delivering a native-like experience for club administrators and members.
+The platform provides club identity customization, automated bracket generation, member management, inter-club competitions, and detailed analytics. It features a mobile-first design with Smash-style vibrant UI (lime green + dark blue theme) using Tailwind CSS and shadcn/ui components, delivering a native-like experience for club administrators and members.
 
-**MVP Transformation Complete (4 Phases):**
-- **Phase 1**: Service rebranding to "Club Rank" with shield emblem logo and navigation restructure (내 클럽/개인 매칭/랭킹/커뮤니티/내 정보)
+**MVP Transformation Complete (5 Phases):**
+- **Phase 1**: Service rebranding to "Club Rank" with shield emblem logo and navigation restructure
 - **Phase 2**: Database expansion with club management schemas and gameFormat support for 5 match types
 - **Phase 3**: Core club features including identity customization, management dashboard, automated bracket generation, and analytics
 - **Phase 4**: Personal records enhancement and location-based matching optimization
+- **Phase 5**: Complete transition to club-centric platform - removed all personal matching features, rebranded to "ClubRank", applied Smash-style UI (lime green #C7F244 + dark blue #1A2332), 4-tab navigation (내 클럽/랭킹/커뮤니티/내 정보)
 
 # User Preferences
 
@@ -38,10 +39,11 @@ Preferred communication style: Simple, everyday language.
 - **Profile Setup**: Multi-step onboarding for tennis-specific data (NTRP, region, availability)
 
 ## Database Schema
-- **Users Table**: Comprehensive player profiles including tennis skill level (NTRP), region, age, bio, available times, and ranking stats (points, wins, losses)
-- **Matches Table**: Match requests with status tracking (pending, accepted, rejected, completed), scheduling, and point costs
-- **Chats Table**: Real-time messaging system linked to matches
+- **Users Table**: Comprehensive player profiles including tennis skill level (NTRP), region, age, bio, and club membership data
+- **Clubs Table**: Club profiles with identity customization, member rosters, and competition history
+- **Club Matches Table**: Inter-club competition records with game format tracking and automated bracket generation
 - **Posts Table**: Community features for user-generated content
+- **Chats Table**: Real-time messaging system for club communications
 
 ## Data Layer
 - **ORM**: Drizzle ORM with PostgreSQL dialect
@@ -54,17 +56,18 @@ Preferred communication style: Simple, everyday language.
 - **PWA-Ready**: Service worker configuration for offline capability
 - **Touch Optimization**: Touch-friendly UI components and gestures
 - **Performance**: Optimized bundle splitting and lazy loading
+- **Smash-Style UI**: Vibrant color theme with lime green (#C7F244) primary and dark blue (#1A2332) accent colors, gradient backgrounds, and animated elements
 
 ## Real-Time Features
-- **Chat System**: Firestore real-time listeners for instant messaging
-- **Match Notifications**: Live updates for match requests and status changes
-- **Presence Indicators**: Online/offline status for active users
+- **Chat System**: Firestore real-time listeners for instant messaging within clubs
+- **Competition Updates**: Live updates for inter-club match results and standings
+- **Community Posts**: Real-time feed updates for club announcements and discussions
 
-## Points & Ranking System
-- **Match Economics**: Points-based system for match requests (50 points per match)
-- **Skill Tracking**: Win/loss records and performance metrics
-- **Leaderboards**: Ranking system based on points and performance
-- **Gamification**: Achievement system to encourage participation
+## Club Ranking System
+- **Club ELO Rating**: Inter-club competition ranking based on match results
+- **Member Statistics**: Individual performance tracking within club context
+- **Leaderboards**: Dual ranking system - individual player rankings and club rankings
+- **Competition Analytics**: Detailed statistics by game format (5 types: 남단, 여단, 복식, 혼복, 단식)
 
 # External Dependencies
 
