@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { adminDb, verifyFirebaseToken } from "./firebase-admin.js";
@@ -17,7 +17,7 @@ const ERROR_CODES = {
   DUPLICATE_FRIENDSHIP: 'DUPLICATE_FRIENDSHIP',
 } as const;
 
-interface AuthenticatedRequest extends Express.Request {
+interface AuthenticatedRequest extends Request {
   user: {
     uid: string;
   };
