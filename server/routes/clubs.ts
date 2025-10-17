@@ -1,5 +1,6 @@
 import { Express, Request, Response } from "express";
-// ✅ 확장자 제거 & 경로 정정
+// ❌ 기존: import { verifyFirebaseToken, AuthenticatedRequest } from "../middleware/auth.js";
+// ✅ 수정: 확장자 제거
 import { verifyFirebaseToken, AuthenticatedRequest } from "../middleware/auth";
 import { storage } from "../storage";
 
