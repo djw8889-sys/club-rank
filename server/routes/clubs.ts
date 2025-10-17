@@ -1,7 +1,7 @@
 import { Express, Request, Response } from "express";
 // ✅ 경로 수정 (middleware 폴더 아님)
 import { verifyFirebaseToken } from "../auth.js";
-import { storage } from "../storage.js";
+import { storage } from "../storage";
 
 export function registerClubRoutes(app: Express) {
   // ✅ 내 클럽 목록
