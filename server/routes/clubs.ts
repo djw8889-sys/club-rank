@@ -1,11 +1,12 @@
 import { Express, Request, Response } from "express";
-import { verifyFirebaseToken, AuthenticatedRequest } from "../middleware/auth";
-import { storage } from "../storage";
-import { db } from "../firebase";
-import { FieldValue } from "firebase-admin/firestore";
+import {
+  verifyFirebaseToken,
+  AuthenticatedRequest,
+} from "../middleware/auth.js"; // ✅ 경로 수정 (.js 확장자 명시!)
+import { storage } from "../storage.js";
 
 export function registerClubRoutes(app: Express) {
-  // ✅ 내 클럽 목록 조회
+  // ✅ 내 클럽 목록
   app.get(
     "/api/clubs/my-membership",
     verifyFirebaseToken,
@@ -88,39 +89,7 @@ export function registerClubRoutes(app: Express) {
     },
   );
 
-  // ✅ 클럽 멤버 조회
-  app.get(
-    "/api/clubs/:clubId/members",
-    verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
-      try {
-        const { clubId } = req.params;
-        const members = await storage.getClubMembers(parseInt(clubId));
-        res.json(members);
-      } catch (error) {
-        console.error("❌ 클럽 멤버 조회 오류:", error);
-        res.status(500).json({ error: "멤버 조회에 실패했습니다." });
-      }
-    },
-  );
-
-  // ✅ 클럽 삭제
-  app.delete(
-    "/api/clubs/:clubId",
-    verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
-      try {
-        const { clubId } = req.params;
-        await storage.deleteClub(parseInt(clubId));
-        res.json({ message: "클럽 삭제 완료" });
-      } catch (error) {
-        console.error("❌ 클럽 삭제 오류:", error);
-        res.status(500).json({ error: "클럽 삭제에 실패했습니다." });
-      }
-    },
-  );
-
-  // ✅ 클럽 내 사용자 통계 조회 (추가된 부분)
+  // ✅ 클럽 내 사용자 통계
   app.get(
     "/api/clubs/:clubId/user/:userId/stats",
     verifyFirebaseToken,
@@ -128,7 +97,6 @@ export function registerClubRoutes(app: Express) {
       try {
         const { clubId, userId } = req.params;
 
-        // 🔒 본인 검증
         if (req.user.uid !== userId) {
           return res
             .status(403)
@@ -140,7 +108,6 @@ export function registerClubRoutes(app: Express) {
           return res.status(400).json({ error: "잘못된 클럽 ID입니다." });
         }
 
-        // ✅ 멤버십 존재 여부 확인
         const membership = await storage.getUserClubMembership(
           userId,
           numericClubId,
@@ -149,9 +116,7 @@ export function registerClubRoutes(app: Express) {
           return res.status(404).json({ error: "클럽 멤버가 아닙니다." });
         }
 
-        // ✅ 사용자 통계 조회
         const stats = await storage.getUserStatsInClub(userId, numericClubId);
-
         if (!stats) {
           return res.json({
             matchesPlayed: 0,
