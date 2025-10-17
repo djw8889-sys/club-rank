@@ -1,8 +1,20 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { User } from "firebase/auth";
-import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, getRedirectResult } from "firebase/auth";
+import {
+  onAuthStateChanged,
+  signInWithRedirect,
+  signOut,
+  getRedirectResult,
+  GoogleAuthProvider,
+} from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { auth, db, googleProvider } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { User as AppUser } from "@shared/schema";
 
 interface AuthContextType {
@@ -21,53 +33,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  // ✅ 로그인: 리디렉션 방식 고정
   const signInWithGoogle = async () => {
     try {
-      console.log("🚀 Starting Google sign-in...");
+      console.log("🚀 Starting Google redirect sign-in...");
       console.log("🌐 Current domain:", window.location.origin);
-      
-      // Try popup first (works better in published environments)
-      try {
-        console.log("🔥 Attempting popup sign-in...");
-        const result = await signInWithPopup(auth, googleProvider);
-        console.log("✅ Google popup sign-in successful:", result.user);
-        return;
-      } catch (popupError: any) {
-        console.warn("⚠️ Popup sign-in failed, trying redirect:", popupError);
-        console.warn("❌ Popup error details:", {
-          code: popupError.code,
-          message: popupError.message,
-          domain: window.location.origin
-        });
-        
-        // If popup fails (e.g., popup blocked, unsupported environment), fall back to redirect
-        if (popupError.code === 'auth/popup-blocked' || 
-            popupError.code === 'auth/popup-closed-by-user' ||
-            popupError.code === 'auth/operation-not-supported-in-this-environment') {
-          await signInWithRedirect(auth, googleProvider);
-          return;
-        }
-        throw popupError;
-      }
+
+      await signInWithRedirect(auth, provider);
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
-      
-      // Add more specific error handling
-      if (error.code === 'auth/unauthorized-domain') {
-        console.error("🚫 FIREBASE ERROR: Domain not authorized!");
-        console.error("📍 Current domain:", window.location.origin);
-        console.error("🔧 Solution: Add this domain to Firebase Console > Authentication > Settings > Authorized domains");
-        alert(`Firebase Error: Domain '${window.location.origin}' is not authorized.\n\nPlease add this domain to Firebase Console:\n1. Go to Firebase Console\n2. Authentication > Settings\n3. Add domain to Authorized domains`);
+      console.error("Google redirect sign-in error:", error);
+
+      if (error.code === "auth/unauthorized-domain") {
+        console.error("🚫 Unauthorized domain:", window.location.origin);
+        alert(
+          `Firebase Error: Domain '${window.location.origin}' is not authorized.\n\n` +
+            `Please add this domain in Firebase Console → Authentication → Settings → Authorized domains`,
+        );
       }
-      
-      console.error("💥 Full sign-in error:", {
-        code: error.code,
-        message: error.message,
-        domain: window.location.origin,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Re-throw error so UI can handle it
+
       throw error;
     }
   };
@@ -83,87 +69,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateAppUser = async (userData: Partial<AppUser>) => {
     if (!user) return;
-    
+
     try {
       const userRef = doc(db, "users", user.uid);
       await setDoc(userRef, userData, { merge: true });
-      setAppUser(prev => prev ? { ...prev, ...userData } as AppUser : userData as AppUser);
+      setAppUser((prev) =>
+        prev ? ({ ...prev, ...userData } as AppUser) : (userData as AppUser),
+      );
     } catch (error) {
       console.error("Update user error:", error);
-      throw error; // Re-throw so calling code can handle it
+      throw error;
     }
   };
 
+  // ✅ 초기 로그인 상태 확인 + 리디렉션 결과 처리
   useEffect(() => {
-    console.log("Setting up Firebase Auth state listener...");
-    
+    console.log("👀 Setting up Firebase Auth listener...");
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔥 Firebase Auth state changed:", {
-        hasUser: !!firebaseUser,
-        uid: firebaseUser?.uid,
-        email: firebaseUser?.email,
-        displayName: firebaseUser?.displayName
-      });
-      
+      console.log("🔥 Auth state changed:", firebaseUser?.email);
       setUser(firebaseUser);
-      
+
       if (firebaseUser) {
         try {
-          // Check for redirect result first
           const result = await getRedirectResult(auth);
           if (result?.user) {
-            console.log("✅ Google redirect sign-in successful:", result.user.email);
+            console.log("✅ Redirect login success:", result.user.email);
           }
 
-          console.log("📄 Checking Firestore user document...");
-          
-          // Get user data from Firestore
-          const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+          const userRef = doc(db, "users", firebaseUser.uid);
+          const userDoc = await getDoc(userRef);
+
           if (userDoc.exists()) {
-            console.log("✅ Found existing user document:", userDoc.data());
+            console.log("✅ Found user in Firestore:", userDoc.data());
             setAppUser(userDoc.data() as AppUser);
           } else {
-            console.log("⚠️ No user document found - creating basic profile for new user");
-            
-            // 새 사용자를 위한 기본 사용자 문서 생성 (프로필 설정 필요로 표시)
-            const basicUserData: AppUser = {
+            console.log("🆕 New user — creating basic profile");
+            const newUser: AppUser = {
               id: firebaseUser.uid,
-              username: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || "사용자",
+              username:
+                firebaseUser.displayName ||
+                firebaseUser.email?.split("@")[0] ||
+                "사용자",
               email: firebaseUser.email || "",
               photoURL: firebaseUser.photoURL,
-              ntrp: "0.0", // 프로필 설정에서 업데이트될 예정
+              ntrp: "0.0",
               region: "",
               age: "0",
               bio: null,
               availableTimes: [],
-              points: 1000, // 기본 포인트
+              points: 1000,
               wins: 0,
               losses: 0,
-              isProfileComplete: false, // 프로필 설정 완료 여부
+              isProfileComplete: false,
               createdAt: new Date(),
-              updatedAt: new Date()
+              updatedAt: new Date(),
             };
-            
-            try {
-              await setDoc(doc(db, "users", firebaseUser.uid), basicUserData);
-              console.log("✅ Created basic user document (profile incomplete):", basicUserData);
-              setAppUser(basicUserData);
-            } catch (createError) {
-              console.error("❌ Failed to create user document:", createError);
-              setAppUser(null); // 사용자는 프로필 설정 화면으로 이동하게 됨
-            }
+
+            await setDoc(userRef, newUser);
+            setAppUser(newUser);
           }
         } catch (error) {
-          console.error("❌ Auth state change error:", error);
+          console.error("Auth state handling error:", error);
           setAppUser(null);
         }
       } else {
         console.log("🚪 User logged out");
         setAppUser(null);
       }
-      
+
       setLoading(false);
-      console.log("🏁 Auth state processing complete");
     });
 
     return unsubscribe;
@@ -183,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
