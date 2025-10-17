@@ -19,6 +19,7 @@ import { User as AppUser } from "@shared/schema";
 interface AuthContextType {
   user: User | null;
   appUser: AppUser | null;
+  token: string | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
@@ -30,18 +31,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // ✅ Google 로그인 (popup 방식으로 복원)
+  // ✅ Google 로그인
   const signInWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
       if (result.user) {
         console.log("✅ Google sign-in success:", result.user.email);
         setUser(result.user);
+
+        // 🔑 ID 토큰 발급
+        const idToken = await result.user.getIdToken();
+        console.log("🔑 Firebase ID Token:", idToken.slice(0, 20) + "...");
+        setToken(idToken);
+
+        // 🔁 Firestore 동기화
         await syncUserData(result.user);
       }
     } catch (error: any) {
@@ -60,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth);
     setUser(null);
     setAppUser(null);
+    setToken(null);
   };
 
   // ✅ Firestore 사용자 동기화
@@ -96,17 +106,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ 로그인 상태 지속 감시
+  // ✅ 로그인 상태 지속 감시 + 토큰 자동 갱신
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         console.log("🔥 Auth state changed:", firebaseUser.email);
         setUser(firebaseUser);
         await syncUserData(firebaseUser);
+
+        // 🔄 토큰 갱신 감시
+        const idToken = await firebaseUser.getIdToken();
+        setToken(idToken);
+        firebaseUser.getIdTokenResult(true).then((res) => {
+          console.log("🪪 Token refreshed:", res.token.slice(0, 20) + "...");
+        });
       } else {
         console.log("🚪 User logged out");
         setUser(null);
         setAppUser(null);
+        setToken(null);
       }
       setLoading(false);
     });
@@ -114,9 +132,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
+  // ✅ 서버 요청 시 Authorization 헤더 자동 포함
+  useEffect(() => {
+    if (!token) return;
+    console.log("⚙️ Setting Authorization header globally");
+    // fetch의 기본 헤더는 설정 불가 → axios를 사용한다면 여기에 axios.defaults.headers.common 추가
+    // 여기서는 window.fetch를 wrap 하는 방식 예시
+    const originalFetch = window.fetch;
+    window.fetch = async (input: RequestInfo, init?: RequestInit) => {
+      const headers = new Headers(init?.headers || {});
+      headers.set("Authorization", `Bearer ${token}`);
+      return originalFetch(input, { ...init, headers });
+    };
+  }, [token]);
+
   const value = {
     user,
     appUser,
+    token,
     loading,
     signInWithGoogle,
     logout,
