@@ -1,9 +1,6 @@
 import { Express, Request, Response } from "express";
-// ✅ 핵심 수정: 상대 경로 + 확장자 .js 명시
-import {
-  verifyFirebaseToken,
-  AuthenticatedRequest,
-} from "../middleware/auth.js";
+// ✅ 경로 수정 (middleware 폴더 아님)
+import { verifyFirebaseToken } from "../auth.js";
 import { storage } from "../storage.js";
 
 export function registerClubRoutes(app: Express) {
@@ -11,12 +8,12 @@ export function registerClubRoutes(app: Express) {
   app.get(
     "/api/clubs/my-membership",
     verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: any, res: Response) => {
       try {
         const userId = req.user.uid;
         const memberships = await storage.getUserClubMemberships(userId);
         const clubs = await Promise.all(
-          memberships.map((m) => storage.getClubById(m.clubId)),
+          memberships.map((m: any) => storage.getClubById(m.clubId)),
         );
         res.json(clubs.filter(Boolean));
       } catch (error) {
@@ -30,7 +27,7 @@ export function registerClubRoutes(app: Express) {
   app.post(
     "/api/clubs",
     verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: any, res: Response) => {
       try {
         const { name, region } = req.body;
         const ownerId = req.user.uid;
@@ -48,7 +45,9 @@ export function registerClubRoutes(app: Express) {
     try {
       const q = (req.query.q as string)?.toLowerCase() || "";
       const clubs = await storage.getAllClubs();
-      const results = clubs.filter((c) => c.name.toLowerCase().includes(q));
+      const results = clubs.filter((c: any) =>
+        c.name.toLowerCase().includes(q),
+      );
       res.json(results);
     } catch (error) {
       console.error("❌ 클럽 검색 오류:", error);
@@ -60,7 +59,7 @@ export function registerClubRoutes(app: Express) {
   app.post(
     "/api/clubs/:clubId/join",
     verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: any, res: Response) => {
       try {
         const { clubId } = req.params;
         const userId = req.user.uid;
@@ -77,7 +76,7 @@ export function registerClubRoutes(app: Express) {
   app.post(
     "/api/clubs/:clubId/leave",
     verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: any, res: Response) => {
       try {
         const { clubId } = req.params;
         const userId = req.user.uid;
@@ -94,7 +93,7 @@ export function registerClubRoutes(app: Express) {
   app.get(
     "/api/clubs/:clubId/user/:userId/stats",
     verifyFirebaseToken,
-    async (req: AuthenticatedRequest, res: Response) => {
+    async (req: any, res: Response) => {
       try {
         const { clubId, userId } = req.params;
 
