@@ -1,9 +1,9 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Note: This app uses Firebase for all data operations
-// The apiRequest and getQueryFn functions are not currently used
-// but are kept for potential future API integration
+// ✅ BASE_URL 자동 인식 (Railway or localhost)
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
+// ✅ 공통 fetch 에러 핸들러
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -11,30 +11,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// ✅ API 요청 함수 (모든 fetch URL에 BASE_URL 자동 포함)
 export async function apiRequest(
   method: string,
-  url: string,
+  endpoint: string,
   data?: unknown | undefined,
 ): Promise<Response> {
   try {
-    // Get Firebase ID token
+    // ✅ Firebase ID Token 포함 (로그인된 사용자용)
     let idToken = null;
     try {
-      const { getAuth } = await import('firebase/auth');
+      const { getAuth } = await import("firebase/auth");
       const auth = getAuth();
       if (auth.currentUser) {
         idToken = await auth.currentUser.getIdToken();
       }
     } catch (error) {
-      console.warn('Failed to get Firebase ID token:', error);
+      console.warn("Failed to get Firebase ID token:", error);
     }
 
     const headers: Record<string, string> = {
       ...(data ? { "Content-Type": "application/json" } : {}),
-      ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {}),
+      ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
     };
 
-    const res = await fetch(url, {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
       method,
       headers,
       body: data ? JSON.stringify(data) : undefined,
@@ -45,38 +46,43 @@ export async function apiRequest(
     return res;
   } catch (error) {
     if (error instanceof TypeError) {
-      // Network error (server down, no internet, etc.)
-      throw new Error(`Network error: Unable to connect to server. Please check your connection.`);
+      throw new Error(
+        `Network error: Unable to connect to ${BASE_URL}. Please check your connection.`,
+      );
     }
-    // Re-throw other errors (like HTTP errors from throwIfResNotOk)
     throw error;
   }
 }
 
+// ✅ React Query 공통 fetch 함수
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     try {
-      // Get Firebase ID token for authentication
+      // ✅ Firebase ID Token 포함
       let idToken = null;
       try {
-        const { getAuth } = await import('firebase/auth');
+        const { getAuth } = await import("firebase/auth");
         const auth = getAuth();
         if (auth.currentUser) {
           idToken = await auth.currentUser.getIdToken();
         }
       } catch (error) {
-        console.warn('Failed to get Firebase ID token for query:', error);
+        console.warn("Failed to get Firebase ID token for query:", error);
       }
 
       const headers: Record<string, string> = {
-        ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {}),
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
       };
 
-      const res = await fetch(queryKey.join("/") as string, {
+      // ✅ BASE_URL 추가 (핵심 수정)
+      const fullUrl = `${BASE_URL}${queryKey[0]}`;
+
+      const res = await fetch(fullUrl, {
         headers,
         credentials: "include",
       });
@@ -89,14 +95,15 @@ export const getQueryFn: <T>(options: {
       return await res.json();
     } catch (error) {
       if (error instanceof TypeError) {
-        // Network error (server down, no internet, etc.)
-        throw new Error(`Network error: Unable to connect to server. Please check your connection.`);
+        throw new Error(
+          `Network error: Unable to connect to ${BASE_URL}. Please check your connection.`,
+        );
       }
-      // Re-throw other errors (like HTTP errors from throwIfResNotOk)
       throw error;
     }
   };
 
+// ✅ React Query 클라이언트 설정
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
