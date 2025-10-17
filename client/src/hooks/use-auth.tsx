@@ -9,8 +9,8 @@ import { User } from "firebase/auth";
 import {
   onAuthStateChanged,
   signInWithRedirect,
-  signOut,
   getRedirectResult,
+  signOut,
   GoogleAuthProvider,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -36,112 +36,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // ✅ 로그인: 리디렉션 방식 고정
+  // ✅ Google 로그인 (redirect 방식)
   const signInWithGoogle = async () => {
     try {
-      console.log("🚀 Starting Google redirect sign-in...");
-      console.log("🌐 Current domain:", window.location.origin);
-
+      console.log("🚀 Redirecting to Google sign-in...");
       await signInWithRedirect(auth, provider);
-    } catch (error: any) {
-      console.error("Google redirect sign-in error:", error);
+    } catch (error) {
+      console.error("Google login failed:", error);
+      throw error;
+    }
+  };
 
-      if (error.code === "auth/unauthorized-domain") {
-        console.error("🚫 Unauthorized domain:", window.location.origin);
-        alert(
-          `Firebase Error: Domain '${window.location.origin}' is not authorized.\n\n` +
-            `Please add this domain in Firebase Console → Authentication → Settings → Authorized domains`,
-        );
+  // ✅ 로그아웃
+  const logout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setAppUser(null);
+  };
+
+  // ✅ Firestore 사용자 데이터 동기화
+  const syncUserData = async (firebaseUser: User) => {
+    const userRef = doc(db, "users", firebaseUser.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      console.log("✅ Firestore user found:", userDoc.data());
+      setAppUser(userDoc.data() as AppUser);
+    } else {
+      console.log("🆕 Creating new user profile...");
+      const newUser: AppUser = {
+        id: firebaseUser.uid,
+        username:
+          firebaseUser.displayName ||
+          firebaseUser.email?.split("@")[0] ||
+          "사용자",
+        email: firebaseUser.email || "",
+        photoURL: firebaseUser.photoURL,
+        ntrp: "0.0",
+        region: "",
+        age: "0",
+        bio: null,
+        availableTimes: [],
+        points: 1000,
+        wins: 0,
+        losses: 0,
+        isProfileComplete: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await setDoc(userRef, newUser);
+      setAppUser(newUser);
+    }
+  };
+
+  // ✅ 핵심 수정: getRedirectResult 먼저 실행
+  useEffect(() => {
+    (async () => {
+      try {
+        const redirectResult = await getRedirectResult(auth);
+        if (redirectResult?.user) {
+          console.log(
+            "✅ Redirect result detected:",
+            redirectResult.user.email,
+          );
+          setUser(redirectResult.user);
+          await syncUserData(redirectResult.user);
+        }
+      } catch (error) {
+        console.error("Redirect result error:", error);
       }
 
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-      setAppUser(null);
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
-
-  const updateAppUser = async (userData: Partial<AppUser>) => {
-    if (!user) return;
-
-    try {
-      const userRef = doc(db, "users", user.uid);
-      await setDoc(userRef, userData, { merge: true });
-      setAppUser((prev) =>
-        prev ? ({ ...prev, ...userData } as AppUser) : (userData as AppUser),
-      );
-    } catch (error) {
-      console.error("Update user error:", error);
-      throw error;
-    }
-  };
-
-  // ✅ 초기 로그인 상태 확인 + 리디렉션 결과 처리
-  useEffect(() => {
-    console.log("👀 Setting up Firebase Auth listener...");
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔥 Auth state changed:", firebaseUser?.email);
-      setUser(firebaseUser);
-
-      if (firebaseUser) {
-        try {
-          const result = await getRedirectResult(auth);
-          if (result?.user) {
-            console.log("✅ Redirect login success:", result.user.email);
-          }
-
-          const userRef = doc(db, "users", firebaseUser.uid);
-          const userDoc = await getDoc(userRef);
-
-          if (userDoc.exists()) {
-            console.log("✅ Found user in Firestore:", userDoc.data());
-            setAppUser(userDoc.data() as AppUser);
-          } else {
-            console.log("🆕 New user — creating basic profile");
-            const newUser: AppUser = {
-              id: firebaseUser.uid,
-              username:
-                firebaseUser.displayName ||
-                firebaseUser.email?.split("@")[0] ||
-                "사용자",
-              email: firebaseUser.email || "",
-              photoURL: firebaseUser.photoURL,
-              ntrp: "0.0",
-              region: "",
-              age: "0",
-              bio: null,
-              availableTimes: [],
-              points: 1000,
-              wins: 0,
-              losses: 0,
-              isProfileComplete: false,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
-
-            await setDoc(userRef, newUser);
-            setAppUser(newUser);
-          }
-        } catch (error) {
-          console.error("Auth state handling error:", error);
+      // 이후에 Auth 상태 변경 감시
+      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          console.log("🔥 Auth state changed:", firebaseUser.email);
+          setUser(firebaseUser);
+          await syncUserData(firebaseUser);
+        } else {
+          console.log("🚪 User logged out");
+          setUser(null);
           setAppUser(null);
         }
-      } else {
-        console.log("🚪 User logged out");
-        setAppUser(null);
-      }
+        setLoading(false);
+      });
 
-      setLoading(false);
-    });
-
-    return unsubscribe;
+      return unsubscribe;
+    })();
   }, []);
 
   const value = {
@@ -150,7 +130,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signInWithGoogle,
     logout,
-    updateAppUser,
+    updateAppUser: async (userData: Partial<AppUser>) => {
+      if (!user) return;
+      const userRef = doc(db, "users", user.uid);
+      await setDoc(userRef, userData, { merge: true });
+      setAppUser((prev) =>
+        prev ? { ...prev, ...userData } : (userData as AppUser),
+      );
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
