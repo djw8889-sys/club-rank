@@ -1,8 +1,10 @@
 import { Express, Request, Response } from "express";
-// ❌ 기존: import { verifyFirebaseToken, AuthenticatedRequest } from "../middleware/auth.js";
-// ✅ 수정: 확장자 제거
-import { verifyFirebaseToken, AuthenticatedRequest } from "../middleware/auth";
-import { storage } from "../storage";
+// ✅ 핵심 수정: 상대 경로 + 확장자 .js 명시
+import {
+  verifyFirebaseToken,
+  AuthenticatedRequest,
+} from "../middleware/auth.js";
+import { storage } from "../storage.js";
 
 export function registerClubRoutes(app: Express) {
   // ✅ 내 클럽 목록
