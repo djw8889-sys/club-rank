@@ -386,3 +386,44 @@ export class MemStorage implements IStorage {
 }
 
 export const storage = new MemStorage();
+// ✅ 클럽 내 사용자 통계 계산
+async getUserStatsInClub(userId: string, clubId: number): Promise<{
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  points: number;
+} | null> {
+  const userMatches = await this.getUserMatchHistory(userId, clubId);
+  if (!userMatches.length) return null;
+
+  let wins = 0;
+  let losses = 0;
+  let draws = 0;
+
+  for (const m of userMatches) {
+    const match = await this.getMatchById(m.matchId);
+    if (!match || !match.result) continue;
+
+    if (match.result === "draw") draws++;
+    else if (
+      (m.team === "requesting" && match.result === "requesting_won") ||
+      (m.team === "receiving" && match.result === "receiving_won")
+    ) wins++;
+    else losses++;
+  }
+
+  const total = wins + losses + draws;
+  const winRate = total > 0 ? (wins / total) * 100 : 0;
+  const points = 1000 + wins * 10 - losses * 5;
+
+  return {
+    matchesPlayed: total,
+    wins,
+    losses,
+    draws,
+    winRate,
+    points,
+  };
+}
