@@ -8,8 +8,7 @@ import {
 import { User } from "firebase/auth";
 import {
   onAuthStateChanged,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   signOut,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -36,25 +35,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // ✅ Google 로그인 (redirect 방식)
+  // ✅ Google 로그인 (popup 방식으로 복원)
   const signInWithGoogle = async () => {
     try {
-      console.log("🚀 Redirecting to Google sign-in...");
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-      console.error("Google login failed:", error);
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        console.log("✅ Google sign-in success:", result.user.email);
+        setUser(result.user);
+        await syncUserData(result.user);
+      }
+    } catch (error: any) {
+      console.error("❌ Google login failed:", error);
+      if (error.code === "auth/unauthorized-domain") {
+        alert(
+          `Firebase Error: Domain '${window.location.origin}' is not authorized.\n` +
+            `Please add this domain in Firebase Console → Authentication → Settings → Authorized domains`,
+        );
+      }
       throw error;
     }
   };
 
-  // ✅ 로그아웃
   const logout = async () => {
     await signOut(auth);
     setUser(null);
     setAppUser(null);
   };
 
-  // ✅ Firestore 사용자 데이터 동기화
+  // ✅ Firestore 사용자 동기화
   const syncUserData = async (firebaseUser: User) => {
     const userRef = doc(db, "users", firebaseUser.uid);
     const userDoc = await getDoc(userRef);
@@ -63,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("✅ Firestore user found:", userDoc.data());
       setAppUser(userDoc.data() as AppUser);
     } else {
-      console.log("🆕 Creating new user profile...");
       const newUser: AppUser = {
         id: firebaseUser.uid,
         username:
@@ -89,39 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ 핵심 수정: getRedirectResult 먼저 실행
+  // ✅ 로그인 상태 지속 감시
   useEffect(() => {
-    (async () => {
-      try {
-        const redirectResult = await getRedirectResult(auth);
-        if (redirectResult?.user) {
-          console.log(
-            "✅ Redirect result detected:",
-            redirectResult.user.email,
-          );
-          setUser(redirectResult.user);
-          await syncUserData(redirectResult.user);
-        }
-      } catch (error) {
-        console.error("Redirect result error:", error);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        console.log("🔥 Auth state changed:", firebaseUser.email);
+        setUser(firebaseUser);
+        await syncUserData(firebaseUser);
+      } else {
+        console.log("🚪 User logged out");
+        setUser(null);
+        setAppUser(null);
       }
+      setLoading(false);
+    });
 
-      // 이후에 Auth 상태 변경 감시
-      const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          console.log("🔥 Auth state changed:", firebaseUser.email);
-          setUser(firebaseUser);
-          await syncUserData(firebaseUser);
-        } else {
-          console.log("🚪 User logged out");
-          setUser(null);
-          setAppUser(null);
-        }
-        setLoading(false);
-      });
-
-      return unsubscribe;
-    })();
+    return unsubscribe;
   }, []);
 
   const value = {
