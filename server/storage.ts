@@ -11,7 +11,6 @@ import {
   InsertMatchParticipants,
 } from "@shared/schema";
 
-// Storage interface for club management
 export interface IStorage {
   createClub(club: InsertClub): Promise<Club>;
   getClubById(id: number): Promise<Club | null>;
@@ -89,7 +88,6 @@ export interface IStorage {
     }[]
   >;
 
-  // ✅ 추가
   getUserStatsInClub(
     userId: string,
     clubId: number,
@@ -102,11 +100,9 @@ export interface IStorage {
     points: number;
   } | null>;
 
-  // ✅ 새로 추가됨: 클럽 가입 정보 전체 조회
   getUserClubMemberships(userId: string): Promise<ClubMember[]>;
 }
 
-// In-memory storage implementation for development
 export class MemStorage implements IStorage {
   private clubs: Map<number, Club> = new Map();
   private clubMembers: Map<number, ClubMember> = new Map();
@@ -119,7 +115,7 @@ export class MemStorage implements IStorage {
   private nextRankingId = 1;
   private nextParticipantId = 1;
 
-  // ✅ 새로 추가됨: 클럽 생성 함수 (이게 없어서 500 오류 발생함)
+  // ✅ 클럽 생성
   async createClub({
     name,
     region,
@@ -131,10 +127,7 @@ export class MemStorage implements IStorage {
   }): Promise<Club> {
     try {
       console.log("🏗️ [Storage] Creating club:", name, region, ownerId);
-
-      if (!name || !region) {
-        throw new Error("클럽 이름과 지역은 필수입니다.");
-      }
+      if (!name || !region) throw new Error("클럽 이름과 지역은 필수입니다.");
 
       const id = this.nextClubId++;
       const newClub: Club = {
@@ -153,7 +146,6 @@ export class MemStorage implements IStorage {
 
       this.clubs.set(id, newClub);
 
-      // ✅ 클럽 생성 시 클럽장(owner)도 자동으로 멤버 등록
       const newMember: ClubMember = {
         id: this.nextMemberId++,
         userId: ownerId,
@@ -172,24 +164,37 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // ✅ 기존 getUserClubs 함수 활용
+  // ✅ 클럽 ID로 클럽 정보 조회
+  async getClubById(id: number): Promise<Club | null> {
+    try {
+      const club = this.clubs.get(id);
+      if (!club) {
+        console.warn(`⚠️ [Storage] Club not found for id: ${id}`);
+        return null;
+      }
+      return club;
+    } catch (error: any) {
+      console.error("🔥 [Storage] Error in getClubById:", error.message);
+      throw new Error("클럽 데이터를 불러오는 중 오류가 발생했습니다.");
+    }
+  }
+
+  // ✅ 유저가 속한 클럽 목록 조회
   async getUserClubs(userId: string): Promise<ClubMember[]> {
     return Array.from(this.clubMembers.values()).filter(
       (m) => m.userId === userId,
     );
   }
 
-  // ✅ 새로 추가됨: /api/clubs/my-membership 호출 시 사용
+  // ✅ my-membership용 함수
   async getUserClubMemberships(userId: string): Promise<ClubMember[]> {
     try {
       console.log("📦 [Storage] Fetching user club memberships for:", userId);
       const memberships = await this.getUserClubs(userId);
-
       if (!memberships || memberships.length === 0) {
         console.warn("⚠️ No club memberships found for user:", userId);
         return [];
       }
-
       console.log("✅ [Storage] Loaded club memberships:", memberships.length);
       return memberships;
     } catch (error: any) {
@@ -201,7 +206,7 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // ✅ 기존 유지
+  // ✅ 파트너십 통계
   async getPartnershipStats(
     userId: string,
     clubId: number,
@@ -223,29 +228,20 @@ export class MemStorage implements IStorage {
 
     for (const participation of userHistory) {
       if (!participation.partnerId) continue;
-
       const partnerId = participation.partnerId;
-      if (!partnerStats.has(partnerId)) {
+      if (!partnerStats.has(partnerId))
         partnerStats.set(partnerId, { wins: 0, losses: 0, draws: 0 });
-      }
-
       const stats = partnerStats.get(partnerId)!;
       const match = this.clubMatches.get(participation.matchId);
-
       if (match && match.result) {
         const isUserWin =
           (participation.team === "requesting" &&
             match.result === "requesting_won") ||
           (participation.team === "receiving" &&
             match.result === "receiving_won");
-
-        if (match.result === "draw") {
-          stats.draws++;
-        } else if (isUserWin) {
-          stats.wins++;
-        } else {
-          stats.losses++;
-        }
+        if (match.result === "draw") stats.draws++;
+        else if (isUserWin) stats.wins++;
+        else stats.losses++;
       }
     }
 
@@ -264,7 +260,7 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.winRate - a.winRate);
   }
 
-  // ✅ 기존 유지
+  // ✅ 유저별 통계
   async getUserStatsInClub(
     userId: string,
     clubId: number,
@@ -278,15 +274,12 @@ export class MemStorage implements IStorage {
   } | null> {
     const userMatches = await this.getUserMatchHistory(userId, clubId);
     if (!userMatches.length) return null;
-
-    let wins = 0;
-    let losses = 0;
-    let draws = 0;
-
+    let wins = 0,
+      losses = 0,
+      draws = 0;
     for (const m of userMatches) {
       const match = await this.getMatchById(m.matchId);
       if (!match || !match.result) continue;
-
       if (match.result === "draw") draws++;
       else if (
         (m.team === "requesting" && match.result === "requesting_won") ||
@@ -295,14 +288,11 @@ export class MemStorage implements IStorage {
         wins++;
       else losses++;
     }
-
     const total = wins + losses + draws;
     const winRate = total > 0 ? (wins / total) * 100 : 0;
     const points = 1000 + wins * 10 - losses * 5;
-
     return { matchesPlayed: total, wins, losses, draws, winRate, points };
   }
 }
 
-// ✅ Export
 export const storage = new MemStorage();
