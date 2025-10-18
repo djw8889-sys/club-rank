@@ -119,6 +119,59 @@ export class MemStorage implements IStorage {
   private nextRankingId = 1;
   private nextParticipantId = 1;
 
+  // ✅ 새로 추가됨: 클럽 생성 함수 (이게 없어서 500 오류 발생함)
+  async createClub({
+    name,
+    region,
+    ownerId,
+  }: {
+    name: string;
+    region: string;
+    ownerId: string;
+  }): Promise<Club> {
+    try {
+      console.log("🏗️ [Storage] Creating club:", name, region, ownerId);
+
+      if (!name || !region) {
+        throw new Error("클럽 이름과 지역은 필수입니다.");
+      }
+
+      const id = this.nextClubId++;
+      const newClub: Club = {
+        id,
+        name,
+        region,
+        description: "",
+        logoUrl: null,
+        bannerUrl: null,
+        primaryColor: "#00AEEF",
+        rankingPoints: 1000,
+        establishedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.clubs.set(id, newClub);
+
+      // ✅ 클럽 생성 시 클럽장(owner)도 자동으로 멤버 등록
+      const newMember: ClubMember = {
+        id: this.nextMemberId++,
+        userId: ownerId,
+        clubId: id,
+        role: "owner",
+        joinedAt: new Date(),
+        isActive: true,
+      };
+      this.clubMembers.set(newMember.id, newMember);
+
+      console.log("✅ [Storage] Club created successfully:", newClub.name);
+      return newClub;
+    } catch (error: any) {
+      console.error("🔥 [Storage] Error creating club:", error.message);
+      throw error;
+    }
+  }
+
   // ✅ 기존 getUserClubs 함수 활용
   async getUserClubs(userId: string): Promise<ClubMember[]> {
     return Array.from(this.clubMembers.values()).filter(
@@ -148,7 +201,7 @@ export class MemStorage implements IStorage {
     }
   }
 
-  // ✅ 추가된 함수 (기존 코드에서 유지)
+  // ✅ 기존 유지
   async getPartnershipStats(
     userId: string,
     clubId: number,
