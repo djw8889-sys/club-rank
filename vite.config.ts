@@ -6,7 +6,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ 프로덕션 환경(Railway, Vercel) 완전 대응 버전
 export default defineConfig({
   plugins: [react()],
   resolve: {
