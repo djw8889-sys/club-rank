@@ -1,0 +1,16 @@
+# Ignore unnecessary files for production build
+node_modules
+dist
+.git
+.gitignore
+Dockerfile
+npm-debug.log
+.env
+*.md
+.vscode
+.idea
+*.log
+tmp
+.cache
+client/node_modules
+client/dist
