@@ -15,6 +15,9 @@
     "npm": ">=10.0.0"
   },
   "dependencies": {
+    "@firebase/app": "^0.14.4",
+    "@firebase/auth": "^1.11.0",
+    "@firebase/firestore": "^4.9.2",
     "@hookform/resolvers": "^3.10.0",
     "@neondatabase/serverless": "^0.10.4",
     "@radix-ui/react-accordion": "^1.2.4",
@@ -54,7 +57,7 @@
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "firebase": "^12.2.1",
+    "firebase": "^12.4.0",
     "firebase-admin": "^13.5.0",
     "framer-motion": "^11.13.1",
     "input-otp": "^1.4.2",
