@@ -5,7 +5,10 @@ nixPkgs = ["nodejs_20", "npm-10_x"]
 cmds = ["npm ci --omit=dev"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "rm -rf /app/node_modules/.cache || true",
+  "npm run build"
+]
 
 [start]
 cmd = "npm start"
