@@ -10,9 +10,9 @@ COPY . .
 # ✅ Client 빌드 (Vite + React)
 WORKDIR /app/client
 RUN npm ci
-RUN npm install -g vite
 RUN npm install tailwindcss postcss autoprefixer -D
-RUN npm run build
+RUN npx vite build
+
 
 
 
