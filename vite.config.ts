@@ -4,20 +4,20 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// ✅ ESM 환경에서는 __dirname 대신 아래 두 줄로 대체해야 함
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Docker 내부에서 항상 /app/client/src 기준으로 alias 인식
+// ✅ 최종 설정
 export default defineConfig({
   plugins: [react()],
-  root: path.resolve(__dirname, "client"), // 👈 현재 작업경로를 명시
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client/src"),
+      "@": path.resolve(__dirname, "./client/src"),
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "server/public"),
+    outDir: path.resolve(__dirname, "./server/public"),
     emptyOutDir: true,
   },
   server: {
