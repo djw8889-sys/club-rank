@@ -1,14 +1,15 @@
-// vite.config.ts (루트 위치)
+// vite.config.ts (루트에 위치)
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
+  // ✅ Vite가 client 폴더를 기준으로 동작하도록 명시
+  root: "client",
   plugins: [react()],
-  root: path.resolve(__dirname, "client"),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client/src"), // ✅ 절대경로 고정
+      "@": path.resolve(__dirname, "client/src"),
     },
   },
   build: {
