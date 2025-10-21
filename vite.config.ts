@@ -4,17 +4,17 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  // ✅ client 폴더를 루트로 명시 (Docker 컨텍스트 호환)
-  root: "./client",
+  // ✅ Railway/Docker 컨테이너 기준: client를 루트로 지정
+  root: "client",
   plugins: [react()],
   resolve: {
     alias: {
-      // ✅ 절대경로로 client/src를 지정
+      // ✅ @ → client/src 절대경로
       "@": path.resolve(__dirname, "client/src"),
     },
   },
   build: {
-    // ✅ 서버에서 정적 파일을 서빙할 위치
+    // ✅ 빌드 결과를 server/public 으로 출력
     outDir: path.resolve(__dirname, "server/public"),
     emptyOutDir: true,
   },
