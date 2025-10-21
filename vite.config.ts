@@ -4,17 +4,14 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
-  // ✅ Railway/Docker 컨테이너 기준: client를 루트로 지정
-  root: "client",
+  // ✅ Railway 빌드에서 alias가 꼬이지 않도록 root 제거
   plugins: [react()],
   resolve: {
     alias: {
-      // ✅ @ → client/src 절대경로
-      "@": path.resolve(__dirname, "client/src"),
+      "@": path.resolve(__dirname, "client/src"), // 절대경로 고정
     },
   },
   build: {
-    // ✅ 빌드 결과를 server/public 으로 출력
     outDir: path.resolve(__dirname, "server/public"),
     emptyOutDir: true,
   },
