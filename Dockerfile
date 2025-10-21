@@ -4,17 +4,15 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# 전체 복사
+# 모든 파일 복사
 COPY . .
 
-# ✅ Client 빌드 (Vite + React)
+# ✅ client 빌드 (devDependencies 포함)
 WORKDIR /app/client
-# devDependencies 포함 설치
 RUN npm install
+RUN npm run build
 
-RUN npx vite build
-
-# ✅ Server 빌드 (Express + TypeScript)
+# ✅ server 빌드
 WORKDIR /app/server
 RUN npm install
 RUN npm run build
@@ -24,10 +22,9 @@ RUN npm run build
 # ------------------------
 FROM node:20-alpine
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-# server 빌드 결과만 복사
+# server 빌드 산출물만 복사
 COPY --from=builder /app/server/dist ./dist
 COPY --from=builder /app/server/package*.json ./
 COPY --from=builder /app/client/dist ./public
