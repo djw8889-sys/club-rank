@@ -5,13 +5,12 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
-  // ✅ 절대 경로를 /app/client 로 맞춰줌 (Railway 빌드 환경 대응)
-  root: path.resolve(__dirname, "client"),
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client/src"),
+      "@": path.resolve(__dirname, "./client/src"),
     },
   },
+  root: path.resolve(__dirname, "client"),
   build: {
     outDir: path.resolve(__dirname, "server/public"),
     emptyOutDir: true,
