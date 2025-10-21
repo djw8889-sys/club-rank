@@ -1,18 +1,10 @@
-# Ignore unnecessary files for production
+# .dockerignore
 node_modules
-client/node_modules
-dist
-client/dist
-.vscode
-.idea
+npm-debug.log
+Dockerfile
+.dockerignore
 .git
 .gitignore
-Dockerfile
-npm-debug.log*
-*.log
-*.md
-.env
-.cache
-tmp
-*.zip
-*.tar
+dist
+server/node_modules
+client/node_modules
