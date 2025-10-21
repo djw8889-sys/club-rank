@@ -1,18 +1,21 @@
-# ✅ Railway 빌드 오류 (EBUSY) 완전 해결 버전 Dockerfile
+# ✅ Railway 빌드 오류 (EBUSY, 권한 문제) 완전 해결 Dockerfile
 
 FROM node:20-alpine AS builder
 
-# 앱 디렉토리 생성
 WORKDIR /app
 
-# package.json과 lock 파일 복사
+# package.json만 먼저 복사 (캐시 효율)
 COPY package*.json ./
 
-# 종속성 설치
-RUN npm ci --omit=dev
+# 환경변수로 npm 캐시 비활성화
+ENV npm_config_cache=/tmp/.npm-cache
 
-# 🔹 캐시 충돌 방지: npm 캐시 디렉터리 삭제
+# npm 설치
+RUN npm ci --omit=dev --no-audit --prefer-offline
+
+# 🔹 빌드 전에 node_modules 캐시 및 권한 문제 방지
 RUN rm -rf /app/node_modules/.cache || true
+RUN chown -R node:node /app
 
 # 소스 복사
 COPY . .
@@ -26,10 +29,9 @@ RUN npm run build
 FROM node:20-alpine AS runner
 
 WORKDIR /app
+ENV NODE_ENV=production
 
 COPY --from=builder /app ./
 
 EXPOSE 5000
-
-# 실행 명령
 CMD ["npm", "start"]
