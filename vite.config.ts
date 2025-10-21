@@ -4,20 +4,19 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// ✅ ESM 환경에서는 __dirname 대신 아래 두 줄로 대체해야 함
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ 최종 설정
 export default defineConfig({
   plugins: [react()],
+  // ✅ root 제거 (빌드 경로 꼬임 방지)
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./client/src"),
+      "@": path.resolve(process.cwd(), "src"), // 🚀 핵심: 현재 /app/client 기준
     },
   },
   build: {
-    outDir: path.resolve(__dirname, "./server/public"),
+    outDir: "../server/public", // 상대경로로 빌드
     emptyOutDir: true,
   },
   server: {
