@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ✅ Tailwind Custom Layer */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -48,9 +47,10 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
   }
-}
 
-/* ✅ Body 기본 스타일 */
-body {
-  @apply bg-background text-foreground;
+  /* ✅ 이 부분이 핵심 — Tailwind에서 변수를 hsl(var(--...)) 형태로 인식 */
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
