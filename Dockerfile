@@ -9,9 +9,10 @@ COPY . .
 
 # ✅ Client 빌드 (Vite + React)
 WORKDIR /app/client
+ENV NODE_ENV=development
 RUN npm ci
-RUN npm install tailwindcss postcss autoprefixer -D
 RUN npm run build
+
 
 # ✅ Server 빌드 (Express + TypeScript)
 WORKDIR /app/server
