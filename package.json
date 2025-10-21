@@ -4,9 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "build": "npm run build:client && npm run build:server",
     "build:client": "cd client && npm ci --omit=dev && npm run build",
     "build:server": "cd server && npm ci --omit=dev && npm run build",
-    "build": "npm run build:client && npm run build:server",
     "start": "node server/dist/index.js"
   },
   "engines": {
