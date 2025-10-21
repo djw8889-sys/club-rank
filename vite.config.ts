@@ -1,19 +1,18 @@
-// client/vite.config.ts
+// vite.config.ts (루트 위치)
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  root: path.resolve(__dirname, "client"),
   resolve: {
     alias: {
-      // ✅ 절대경로로 강제 고정 (Railway Docker 환경에서도 동작)
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "client/src"), // ✅ 절대경로 고정
     },
   },
   build: {
-    // ✅ 빌드 결과를 서버가 읽을 위치로 출력
-    outDir: path.resolve(__dirname, "../server/public"),
+    outDir: path.resolve(__dirname, "server/public"),
     emptyOutDir: true,
   },
   server: {
