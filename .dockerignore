@@ -1,16 +1,18 @@
-# Ignore unnecessary files for production build
+# Ignore unnecessary files for production
 node_modules
+client/node_modules
 dist
+client/dist
+.vscode
+.idea
 .git
 .gitignore
 Dockerfile
-npm-debug.log
-.env
-*.md
-.vscode
-.idea
+npm-debug.log*
 *.log
-tmp
+*.md
+.env
 .cache
-client/node_modules
-client/dist
+tmp
+*.zip
+*.tar
