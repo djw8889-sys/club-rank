@@ -1,9 +1,9 @@
 node_modules
-npm-debug.log
-Dockerfile
-.dockerignore
+client/node_modules
+server/node_modules
+dist
 .git
 .gitignore
-dist
-server/node_modules
-client/node_modules
+Dockerfile
+.dockerignore
+npm-debug.log
