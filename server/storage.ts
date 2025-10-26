@@ -1,4 +1,3 @@
-// server/storage.ts
 import {
   Club,
   ClubMember,
@@ -28,12 +27,24 @@ export interface IStorage {
     winRate: number;
     points: number;
   } | null>;
-  // 추가: 사용자에게 기본 클럽 멤버십 보장
   ensureDefaultMembership(userId: string): Promise<ClubMember>;
+
+  // 👇 추가된 랭킹·매치용 기본 메서드 시그니처
+  getUserRankingPoints(): Promise<UserRankingPoints[]>;
+  getUserRankingPointsByFormat(): Promise<UserRankingPoints[]>;
+  getClubRankingsByFormat(): Promise<ClubRanking[] | any>;
+  getUserMatchHistory(): Promise<ClubMatch[]>;
+  updateMatchResult(): Promise<void>;
+  createOrUpdateUserRankingPoints(): Promise<UserRankingPoints>;
+  addMatchParticipants(): Promise<MatchParticipants>;
+  getMatchById(): Promise<ClubMatch | null>;
+  getPartnershipStats(): Promise<any>;
 }
 
+// 타입 alias
 type Id = number;
 
+// 🧠 메모리 스토리지 (개발용)
 export class MemStorage implements IStorage {
   private clubs = new Map<Id, Club>();
   private clubMembers = new Map<Id, ClubMember>();
@@ -65,7 +76,6 @@ export class MemStorage implements IStorage {
     };
     this.clubs.set(defaultClub.id, defaultClub);
 
-    // 참고: 여기서는 사용자 uid를 알 수 없으므로 “system-init”만 등록.
     const defaultMember: ClubMember = {
       id: this.nextMemberId++,
       userId: "system-init",
@@ -109,12 +119,10 @@ export class MemStorage implements IStorage {
   }
 
   async getUserClubMemberships(userId: string): Promise<ClubMember[]> {
-    const memberships = await this.getUserClubs(userId);
-    return memberships;
+    return this.getUserClubs(userId);
   }
 
   async getUserStatsInClub(_clubId: number, _userId: string) {
-    // 데모용 기본값
     return {
       matchesPlayed: 0,
       wins: 0,
@@ -125,12 +133,10 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // 🔥 핵심: 로그인 사용자가 멤버십이 없으면 기본 클럽에 자동 가입
   async ensureDefaultMembership(userId: string): Promise<ClubMember> {
     const existing = (await this.getUserClubs(userId))[0];
     if (existing) return existing;
 
-    // 기본 클럽이 없을 리 없지만, 안전하게 보장
     const defaultClub =
       Array.from(this.clubs.values())[0] ??
       (await this.createClub({ name: "MatchPoint 기본 클럽" }));
@@ -145,6 +151,61 @@ export class MemStorage implements IStorage {
     };
     this.clubMembers.set(newMember.id, newMember);
     return newMember;
+  }
+
+  // 🧩 추가된 메서드: routes/rankings.ts 등에서 요구됨
+  async getUserRankingPoints(): Promise<UserRankingPoints[]> {
+    return Array.from(this.userRankingPoints.values());
+  }
+
+  async getUserRankingPointsByFormat(): Promise<UserRankingPoints[]> {
+    return this.getUserRankingPoints();
+  }
+
+  async getClubRankingsByFormat(): Promise<any[]> {
+    return Array.from(this.clubs.values());
+  }
+
+  async getUserMatchHistory(): Promise<ClubMatch[]> {
+    return Array.from(this.clubMatches.values());
+  }
+
+  async updateMatchResult(): Promise<void> {
+    return;
+  }
+
+  async createOrUpdateUserRankingPoints(): Promise<UserRankingPoints> {
+    const dummy: UserRankingPoints = {
+      id: 1,
+      userId: "system-init",
+      format: "singles",
+      points: 1000,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.userRankingPoints.set(dummy.id, dummy);
+    return dummy;
+  }
+
+  async addMatchParticipants(): Promise<MatchParticipants> {
+    const dummy: MatchParticipants = {
+      id: 1,
+      matchId: 1,
+      userId: "system-init",
+      team: "A",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.matchParticipants.set(dummy.id, dummy);
+    return dummy;
+  }
+
+  async getMatchById(): Promise<ClubMatch | null> {
+    return Array.from(this.clubMatches.values())[0] ?? null;
+  }
+
+  async getPartnershipStats(): Promise<any> {
+    return { matchesPlayed: 0, wins: 0, losses: 0 };
   }
 }
 
