@@ -1,6 +1,4 @@
-# ===============================
-# 기본 제외 (빌드 컨텍스트 최소화)
-# ===============================
+# 기본 제외
 node_modules
 client/node_modules
 server/node_modules
@@ -11,11 +9,7 @@ npm-debug.log
 Dockerfile
 .dockerignore
 
-# ===============================
-# 반드시 포함 (Docker 빌드용 파일)
-# ===============================
-
-# Client
+# 반드시 포함
 !client/package.json
 !client/package-lock.json
 !client/src
@@ -25,15 +19,11 @@ Dockerfile
 !client/tailwind.config.ts
 !client/tsconfig.json
 
-# Server
 !server/package.json
 !server/package-lock.json
 !server/src
 !server/tsconfig.json
 
-# ===============================
-# 루트 설정 파일 (필수)
-# ===============================
 !package.json
 !package-lock.json
 !tsconfig.json
