@@ -2,6 +2,7 @@
 # 1️⃣ Base Stage
 # ===============================
 FROM node:20-alpine AS base
+ARG CACHEBUST=1
 WORKDIR /app
 
 # ===============================
