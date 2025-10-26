@@ -11,6 +11,13 @@ import {
   InsertMatchParticipants,
 } from "@shared/schema";
 
+export interface ClubRanking {
+  clubId: number;
+  name: string;
+  points: number;
+  members: number;
+}
+
 export interface IStorage {
   createClub(club: InsertClub): Promise<Club>;
   getClubById(id: number): Promise<Club | null>;
@@ -29,10 +36,10 @@ export interface IStorage {
   } | null>;
   ensureDefaultMembership(userId: string): Promise<ClubMember>;
 
-  // 👇 추가된 랭킹·매치용 기본 메서드 시그니처
+  // 추가 메서드 (랭킹용)
   getUserRankingPoints(): Promise<UserRankingPoints[]>;
   getUserRankingPointsByFormat(): Promise<UserRankingPoints[]>;
-  getClubRankingsByFormat(): Promise<ClubRanking[] | any>;
+  getClubRankingsByFormat(): Promise<ClubRanking[]>;
   getUserMatchHistory(): Promise<ClubMatch[]>;
   updateMatchResult(): Promise<void>;
   createOrUpdateUserRankingPoints(): Promise<UserRankingPoints>;
@@ -41,10 +48,8 @@ export interface IStorage {
   getPartnershipStats(): Promise<any>;
 }
 
-// 타입 alias
 type Id = number;
 
-// 🧠 메모리 스토리지 (개발용)
 export class MemStorage implements IStorage {
   private clubs = new Map<Id, Club>();
   private clubMembers = new Map<Id, ClubMember>();
@@ -60,7 +65,6 @@ export class MemStorage implements IStorage {
 
   private initializeDefaultClub() {
     if (this.clubs.size > 0) return;
-
     const defaultClub: Club = {
       id: this.nextClubId++,
       name: "MatchPoint 기본 클럽",
@@ -112,10 +116,9 @@ export class MemStorage implements IStorage {
   }
 
   async getUserClubs(userId: string): Promise<ClubMember[]> {
-    const list = Array.from(this.clubMembers.values()).filter(
+    return Array.from(this.clubMembers.values()).filter(
       (m) => m.userId === userId && m.isActive,
     );
-    return list;
   }
 
   async getUserClubMemberships(userId: string): Promise<ClubMember[]> {
@@ -153,7 +156,6 @@ export class MemStorage implements IStorage {
     return newMember;
   }
 
-  // 🧩 추가된 메서드: routes/rankings.ts 등에서 요구됨
   async getUserRankingPoints(): Promise<UserRankingPoints[]> {
     return Array.from(this.userRankingPoints.values());
   }
@@ -162,8 +164,15 @@ export class MemStorage implements IStorage {
     return this.getUserRankingPoints();
   }
 
-  async getClubRankingsByFormat(): Promise<any[]> {
-    return Array.from(this.clubs.values());
+  async getClubRankingsByFormat(): Promise<ClubRanking[]> {
+    return Array.from(this.clubs.values()).map((c) => ({
+      clubId: c.id,
+      name: c.name,
+      points: c.rankingPoints ?? 1000,
+      members: Array.from(this.clubMembers.values()).filter(
+        (m) => m.clubId === c.id,
+      ).length,
+    }));
   }
 
   async getUserMatchHistory(): Promise<ClubMatch[]> {

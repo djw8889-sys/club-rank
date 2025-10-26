@@ -16,6 +16,6 @@
       "@shared/*": ["../shared/*"]
     }
   },
-  "include": ["**/*.ts", "types/**/*.d.ts"]
+  "include": ["**/*.ts", "types/**/*.d.ts"],
   "exclude": ["dist", "node_modules"]
 }
