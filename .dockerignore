@@ -1,4 +1,6 @@
-# 기본 제외
+# ==========================
+# Common ignore
+# ==========================
 node_modules
 dist
 .git
@@ -7,7 +9,9 @@ npm-debug.log
 Dockerfile
 .dockerignore
 
-# client
+# ==========================
+# Client includes
+# ==========================
 !client/package.json
 !client/package-lock.json
 !client/src
@@ -17,14 +21,18 @@ Dockerfile
 !client/tailwind.config.ts
 !client/tsconfig.json
 
-# server
+# ==========================
+# Server includes
+# ==========================
 !server/package.json
 !server/package-lock.json
 !server/src
 !server/tsconfig.json
 
+# ==========================
+# Root includes
+# ==========================
 !package.json
 !package-lock.json
 !tsconfig.json
 !README.md
-!server/src
