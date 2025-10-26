@@ -1,9 +1,19 @@
+# Ignore node_modules folders
 node_modules
 client/node_modules
 server/node_modules
+
+# Ignore build and VCS files
 dist
 .git
 .gitignore
-Dockerfile
-.dockerignore
 npm-debug.log
+
+# Keep these (important for Docker build)
+!client/package.json
+!client/package-lock.json
+!client/src
+!client/vite.config.ts
+!client/tailwind.config.ts
+!client/index.html
+!client/postcss.config.js
