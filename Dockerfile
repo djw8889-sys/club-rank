@@ -30,8 +30,6 @@ COPY --from=deps /app/server/node_modules ./server/node_modules
 # ---- Copy source ----
 COPY client ./client
 COPY server ./server
-# 🚀 강제 보장: server/src 폴더 포함 (dockerignore 무시)
-COPY server/src ./server/src
 
 # ---- Ensure tsconfig is available ----
 COPY server/tsconfig.json ./server/tsconfig.json
