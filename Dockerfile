@@ -30,11 +30,14 @@ COPY --from=deps /app/server/node_modules ./server/node_modules
 COPY client ./client
 COPY server ./server
 
+# ---- Ensure tsconfig is available ----
+COPY server/tsconfig.json ./server/tsconfig.json
+
 # ---- Build Client ----
 RUN cd client && npm run build
 
 # ---- Build Server ----
-RUN cd server && npm run build
+RUN cd server && npx tsc --project tsconfig.json
 
 # ===============================
 # 4️⃣ Runtime Stage
