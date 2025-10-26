@@ -1,44 +1,57 @@
 # ===============================
-# 1️⃣ Build Stage (Client + Server)
+# 1️⃣ Base Stage
 # ===============================
-FROM node:20-alpine AS builder
+FROM node:20-alpine AS base
 WORKDIR /app
 
-# 🔹 빌드 캐시 효율을 위해 package.json 먼저 복사
+# ===============================
+# 2️⃣ Dependencies Stage (캐시 분리)
+# ===============================
+FROM base AS deps
+
+# ---- Client deps ----
 COPY client/package*.json ./client/
+RUN cd client && npm ci
+
+# ---- Server deps ----
 COPY server/package*.json ./server/
-
-# 🔹 클라이언트 의존성 설치 및 빌드
-WORKDIR /app/client
-RUN npm ci
-COPY client .
-RUN npm run build
-
-# 🔹 서버 의존성 설치 및 빌드 (dev 포함)
-WORKDIR /app/server
-RUN npm ci
-COPY server .
-RUN npm run build
+RUN cd server && npm ci
 
 # ===============================
-# 2️⃣ Runtime Stage (경량 실행)
+# 3️⃣ Build Stage
+# ===============================
+FROM base AS builder
+
+# ---- Copy deps from cache ----
+COPY --from=deps /app/client/node_modules ./client/node_modules
+COPY --from=deps /app/server/node_modules ./server/node_modules
+
+# ---- Copy source ----
+COPY client ./client
+COPY server ./server
+
+# ---- Build Client ----
+RUN cd client && npm run build
+
+# ---- Build Server ----
+RUN cd server && npm run build
+
+# ===============================
+# 4️⃣ Runtime Stage
 # ===============================
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# 🔹 서버 실행에 필요한 파일만 복사
-COPY --from=builder /app/server/package*.json ./
+# ---- Install minimal runtime deps ----
+COPY server/package*.json ./
 RUN npm ci --omit=dev
 
-# 🔹 서버 빌드 산출물 복사
+# ---- Copy built artifacts ----
 COPY --from=builder /app/server/dist ./dist
-
-# 🔹 클라이언트 정적 파일 복사
 COPY --from=builder /app/client/dist ./public
 
-# 🔹 환경 변수 및 포트 설정
-EXPOSE 8080
+# ---- Env & Ports ----
 ENV NODE_ENV=production
+EXPOSE 8080
 
-# 🔹 실행 명령
 CMD ["node", "dist/index.js"]
