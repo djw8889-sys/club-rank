@@ -6,7 +6,6 @@ export class MemStorage {
     rankings: [],
   };
 
-  // ✅ Example dummy methods
   getUserClubMemberships(userId: string) {
     return this.data.clubs.filter((club) => club.members?.includes(userId));
   }
@@ -52,4 +51,4 @@ export class MemStorage {
   }
 }
 
-export const memStorage = new MemStorage();
+export const storage = new MemStorage(); // ✅ 이름을 storage로 통일
