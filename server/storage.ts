@@ -1,3 +1,4 @@
+// server/storage.ts
 export class MemStorage {
   private data: Record<string, any[]> = {
     users: [],
@@ -7,7 +8,7 @@ export class MemStorage {
   };
 
   // ----- Club 관련 -----
-  getClubById(id: string) {
+  getClubById(id: string | number) {
     return this.data.clubs.find((club) => club.id === id);
   }
 
@@ -29,57 +30,74 @@ export class MemStorage {
   }
 
   // ----- Ranking 관련 -----
-  getUserRankingPoints(userId: string) {
-    return this.data.rankings.find((r) => r.userId === userId);
-  }
-
-  getUserRankingPointsByFormat(userId: string, format: string) {
-    return this.data.rankings.find(
-      (r) => r.userId === userId && r.format === format,
+  getUserRankingPoints(userId: string, clubId?: string | number) {
+    return this.data.rankings.filter(
+      (r) => r.userId === userId && (!clubId || r.clubId === clubId),
     );
   }
 
-  getClubRankingsByFormat(format: string) {
-    return this.data.rankings.filter((r) => r.format === format);
+  getUserRankingPointsByFormat(
+    userId: string,
+    clubId: string | number,
+    format: string,
+  ) {
+    return this.data.rankings.find(
+      (r) => r.userId === userId && r.format === format && r.clubId === clubId,
+    );
   }
 
-  createOrUpdateUserRankingPoints(userId: string, data: any) {
-    const existing = this.getUserRankingPoints(userId);
+  getClubRankingsByFormat(clubId: string | number, format: string) {
+    return this.data.rankings.filter(
+      (r) => r.format === format && r.clubId === clubId,
+    );
+  }
+
+  createOrUpdateUserRankingPoints(data: any) {
+    const existing = this.data.rankings.find(
+      (r) =>
+        r.userId === data.userId &&
+        r.clubId === data.clubId &&
+        r.gameFormat === data.gameFormat,
+    );
+
     if (existing) {
       Object.assign(existing, data);
     } else {
-      this.data.rankings.push({ userId, ...data });
+      this.data.rankings.push(data);
     }
   }
 
   // ----- Match 관련 -----
-  getUserMatchHistory(userId: string) {
+  getUserMatchHistory(userId: string, clubId?: string | number) {
     return this.data.matches.filter(
-      (m) => m.player1 === userId || m.player2 === userId,
+      (m) =>
+        (m.player1 === userId || m.player2 === userId) &&
+        (!clubId || m.clubId === clubId),
     );
   }
 
-  updateMatchResult(matchId: string, result: any) {
+  updateMatchResult(matchId: string | number, result: any) {
     const match = this.data.matches.find((m) => m.id === matchId);
     if (match) Object.assign(match, result);
     return match;
   }
 
-  getMatchById(matchId: string) {
+  getMatchById(matchId: string | number) {
     return this.data.matches.find((m) => m.id === matchId);
   }
 
-  getPartnershipStats(userId: string) {
+  getPartnershipStats(userId: string, clubId?: string | number) {
     return this.data.matches.filter(
-      (m) => m.player1 === userId || m.player2 === userId,
+      (m) =>
+        (m.player1 === userId || m.player2 === userId) &&
+        (!clubId || m.clubId === clubId),
     );
   }
 
-  addMatchParticipants(matchId: string, participants: string[]) {
-    const match = this.getMatchById(matchId);
-    if (match) match.participants = participants;
+  addMatchParticipants(participants: any[]) {
+    this.data.matches.push(...participants);
   }
 }
 
-// ✅ export 이름을 확실히 storage로 통일
+// ✅ Export 이름 통일
 export const storage = new MemStorage();
