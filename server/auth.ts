@@ -23,3 +23,6 @@ export const authenticateUser = async (
     res.status(403).json({ message: "Invalid token" });
   }
 };
+
+// ✅ export 추가
+export { verifyFirebaseToken };

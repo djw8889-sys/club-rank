@@ -6,8 +6,9 @@ export class MemStorage {
     rankings: [],
   };
 
-  getUserClubMemberships(userId: string) {
-    return this.data.clubs.filter((club) => club.members?.includes(userId));
+  // ✅ club 관련
+  getClubById(id: string) {
+    return this.data.clubs.find((club) => club.id === id);
   }
 
   createClub(club: any) {
@@ -23,6 +24,35 @@ export class MemStorage {
     }
   }
 
+  getUserClubMemberships(userId: string) {
+    return this.data.clubs.filter((club) => club.members?.includes(userId));
+  }
+
+  // ✅ rankings 관련
+  getUserRankingPoints(userId: string) {
+    return this.data.rankings.find((r) => r.userId === userId);
+  }
+
+  getUserRankingPointsByFormat(userId: string, format: string) {
+    return this.data.rankings.find(
+      (r) => r.userId === userId && r.format === format,
+    );
+  }
+
+  getClubRankingsByFormat(format: string) {
+    return this.data.rankings.filter((r) => r.format === format);
+  }
+
+  createOrUpdateUserRankingPoints(userId: string, data: any) {
+    const existing = this.getUserRankingPoints(userId);
+    if (existing) {
+      Object.assign(existing, data);
+    } else {
+      this.data.rankings.push({ userId, ...data });
+    }
+  }
+
+  // ✅ match 관련
   getUserMatchHistory(userId: string) {
     return this.data.matches.filter(
       (m) => m.player1 === userId || m.player2 === userId,
@@ -51,4 +81,5 @@ export class MemStorage {
   }
 }
 
-export const storage = new MemStorage(); // ✅ 이름을 storage로 통일
+// ✅ routes들이 사용하는 이름과 일치시킴
+export const memStorage = new MemStorage();

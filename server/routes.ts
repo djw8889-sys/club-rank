@@ -4,13 +4,21 @@ import { memStorage } from "./storage";
 
 export const router = express.Router();
 
-// ✅ 예시 라우트
 router.get("/", (req, res) => {
-  res.json({ message: "API working!" });
+  res.json({ message: "API alive" });
 });
 
-router.get("/clubs", authenticateUser, (req, res) => {
-  res.json({ clubs: memStorage.getUserClubMemberships("test-user") });
+// ✅ 예시 club 엔드포인트
+router.get("/clubs/:id", authenticateUser, (req, res) => {
+  const club = memStorage.getClubById(req.params.id);
+  if (!club) return res.status(404).json({ message: "Not found" });
+  res.json(club);
+});
+
+// ✅ 예시 ranking 엔드포인트
+router.get("/rankings/:userId", authenticateUser, (req, res) => {
+  const data = memStorage.getUserRankingPoints(req.params.userId);
+  res.json(data || { message: "No ranking data" });
 });
 
 export default router;
