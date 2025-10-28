@@ -47,12 +47,12 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # ---- Install minimal runtime deps ----
-COPY server/package*.json ./ 
+COPY server/package*.json ./
 RUN npm ci --omit=dev
 
 # ---- Copy built artifacts ----
 COPY --from=builder /app/server/dist ./dist
-COPY --from=builder /app/client/dist ./public
+COPY --from=builder /app/server/public ./public
 
 # ---- Env & Ports ----
 ENV NODE_ENV=production
