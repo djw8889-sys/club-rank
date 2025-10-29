@@ -1,6 +1,7 @@
 {
   "name": "server",
   "private": true,
+  "type": "module",            // ✅ 추가: ESM 모듈 지정
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js"
