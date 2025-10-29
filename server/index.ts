@@ -3,8 +3,9 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import { registerClubRoutes } from "./routes/club-routes.js";
-import { registerRankingRoutes } from "./routes/ranking-routes.js";
+import { registerClubRoutes } from "./routes/clubs.js";
+import { registerRankingRoutes } from "./routes/rankings.js";
+import { storage } from "./storage.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -12,29 +13,29 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// ✅ 현재 파일 경로 계산 (ESM 호환)
+// ✅ ES Module 호환용 경로 계산
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ 정적 파일 제공 (React build 결과)
-const publicPath = path.join(__dirname, "../public");
-app.use(express.static(publicPath));
+// ✅ 정적 파일 경로 설정 (client → dist → public)
+const publicDir = path.resolve(__dirname, "../public");
+app.use(express.static(publicDir));
 
 // ✅ API 라우트 등록
 registerClubRoutes(app);
 registerRankingRoutes(app);
 
-// ✅ 루트 페이지: React index.html 서빙
+// ✅ 기본 루트 핸들러
 app.get("/", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
-// ✅ SPA 지원 (React Router 등)
+// ✅ SPA 라우팅 지원 (react-router-dom 등)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(publicPath, "index.html"));
+  res.sendFile(path.join(publicDir, "index.html"));
 });
 
-// ✅ 서버 실행
+// ✅ 서버 구동
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
