@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyFirebaseToken } from "./firebase-admin";
 
+// ✅ 'user' 필드를 optional 로 선언해야 Express 기본 Request와 호환됨
 export interface AuthenticatedRequest extends Request {
   user?: any;
 }
@@ -24,5 +25,5 @@ export const authenticateUser = async (
   }
 };
 
-// ✅ export 추가
+// ✅ export 유지
 export { verifyFirebaseToken };
