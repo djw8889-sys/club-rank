@@ -1,12 +1,16 @@
-import { Express, Request, Response } from "express";
-import { verifyFirebaseToken } from "../auth";
-import { storage } from "../storage";
+import type { Express, Request, Response } from "express";
+import { verifyFirebaseToken } from "../auth.js"; // ✅ 반드시 .js 붙여야 함!
+import { storage } from "../storage.js";
 
 /**
  * Club 관련 API 라우트 등록
  */
 export function registerClubRoutes(app: Express) {
-  // ✅ 내 클럽 멤버십 목록 조회
+  /**
+   * ✅ 내 클럽 멤버십 목록 조회
+   * - 로그인 사용자의 클럽 멤버십이 없을 경우 기본 클럽 자동 생성 및 가입
+   * - 항상 최소 1개 이상의 클럽정보를 반환하도록 보장
+   */
   app.get(
     "/api/clubs/my-membership",
     verifyFirebaseToken,
@@ -17,13 +21,14 @@ export function registerClubRoutes(app: Express) {
           return res.status(401).json({ error: "인증 정보가 없습니다." });
         }
 
+        // 없으면 기본 클럽 자동 생성 및 가입
         await storage.ensureDefaultMembership(userId);
 
         const memberships = await storage.getUserClubMemberships(userId);
         const clubs = await Promise.all(
           memberships.map(async (m) => ({
             membership: m,
-            club: (await storage.getClubById(m.clubId))!, // ✅ string
+            club: (await storage.getClubById(m.clubId))!,
           })),
         );
 
@@ -35,14 +40,17 @@ export function registerClubRoutes(app: Express) {
     },
   );
 
-  // ✅ 클럽 단건 조회
+  /**
+   * ✅ 클럽 단건 조회
+   * @param id 클럽 ID (문자열 그대로 사용)
+   */
   app.get(
     "/api/clubs/:id",
     verifyFirebaseToken,
     async (req: Request, res: Response) => {
       try {
-        const id = req.params.id; // ✅ 문자열 그대로 사용
-        const club = await storage.getClubById(id); // ✅ TS 통과
+        const id = req.params.id;
+        const club = await storage.getClubById(id);
 
         if (!club) {
           return res.status(404).json({ error: "클럽을 찾을 수 없습니다." });
@@ -56,7 +64,10 @@ export function registerClubRoutes(app: Express) {
     },
   );
 
-  // ✅ 클럽 생성 (테스트용)
+  /**
+   * ✅ 클럽 생성 (테스트용 or 관리자용)
+   * - 추후 관리 기능 추가 시 사용
+   */
   app.post(
     "/api/clubs",
     verifyFirebaseToken,

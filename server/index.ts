@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -6,7 +7,15 @@ import { registerClubRoutes } from "./routes/clubs.js";
 import { registerRankingRoutes } from "./routes/rankings.js";
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+
+// ✅ 포트 충돌 방지용 (5000 → 5001)
+const PORT = process.env.PORT || 5001;
+
+// ✅ 환경변수 확인 로그
+console.log(
+  "🔥 ENV loaded:",
+  process.env.FIREBASE_PROJECT_ID || "❌ Not Found",
+);
 
 app.use(cors());
 app.use(express.json());
