@@ -8,36 +8,40 @@ import { registerRankingRoutes } from "./routes/rankings.js";
 
 const app = express();
 
-// ✅ 포트 충돌 방지용 (5000 → 5001)
-const PORT = process.env.PORT || 5001;
+// ✅ Railway는 PORT 환경변수를 자동으로 지정함
+const PORT = process.env.PORT || 5000;
 
-// ✅ 환경변수 확인 로그
+// ✅ 환경변수 확인
 console.log(
   "🔥 ENV loaded:",
   process.env.FIREBASE_PROJECT_ID || "❌ Not Found",
 );
 
-app.use(cors());
+// ✅ CORS 설정 (Authorization 허용)
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  }),
+);
+
 app.use(express.json());
 
-// ✅ ESM 호환 경로 계산
+// ✅ ESM 경로 계산
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ 정적 파일 경로 설정
+// ✅ 정적 파일
 const publicDir = path.resolve(__dirname, "../public");
 app.use(express.static(publicDir));
 
-// ✅ API 라우트 등록
+// ✅ API 라우트
 registerClubRoutes(app);
 registerRankingRoutes(app);
 
-// ✅ 루트 페이지
-app.get("/", (_, res) => {
-  res.sendFile(path.join(publicDir, "index.html"));
-});
-
-// ✅ SPA 라우팅 대응
+// ✅ SPA 라우팅
 app.get("*", (_, res) => {
   res.sendFile(path.join(publicDir, "index.html"));
 });

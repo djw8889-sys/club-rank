@@ -114,9 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(firebaseUser);
         await syncUserData(firebaseUser);
 
-        // 🔄 토큰 갱신 감시
+        // 🔄 토큰 즉시 갱신 및 주기적 업데이트
         const idToken = await firebaseUser.getIdToken();
         setToken(idToken);
+
+        // 자동 갱신 이벤트
         firebaseUser.getIdTokenResult(true).then((res) => {
           console.log("🪪 Token refreshed:", res.token.slice(0, 20) + "...");
         });
@@ -131,20 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return unsubscribe;
   }, []);
-
-  // ✅ 서버 요청 시 Authorization 헤더 자동 포함
-  useEffect(() => {
-    if (!token) return;
-    console.log("⚙️ Setting Authorization header globally");
-    // fetch의 기본 헤더는 설정 불가 → axios를 사용한다면 여기에 axios.defaults.headers.common 추가
-    // 여기서는 window.fetch를 wrap 하는 방식 예시
-    const originalFetch = window.fetch;
-    window.fetch = async (input: RequestInfo, init?: RequestInit) => {
-      const headers = new Headers(init?.headers || {});
-      headers.set("Authorization", `Bearer ${token}`);
-      return originalFetch(input, { ...init, headers });
-    };
-  }, [token]);
 
   const value = {
     user,

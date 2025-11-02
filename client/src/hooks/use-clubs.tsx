@@ -1,233 +1,65 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useAuth } from "./use-auth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
-// --- 타입 정의 ---
-interface ClubMembership {
-  membership: {
-    id: number;
-    userId: string;
-    clubId: number;
-    role: "owner" | "admin" | "member";
-    joinedAt: Date;
-    isActive: boolean;
-  };
-  club: {
-    id: number;
-    name: string;
-    logoUrl: string | null;
-    bannerUrl: string | null;
-    description: string | null;
-    primaryColor: string | null;
-    rankingPoints: number | null;
-    region: string;
-    establishedAt: Date | null;
-  };
-}
-
-interface ClubSearchResult {
-  id: number;
-  name: string;
-  description: string | null;
-  region: string;
-  primaryColor: string | null;
-  rankingPoints: number | null;
-  memberCount: number;
-  establishedAt: Date | null;
-}
-
-interface ClubMember {
-  id: number;
-  userId: string;
-  clubId: number;
-  role: "owner" | "admin" | "member";
-  joinedAt: Date;
-  isActive: boolean;
-}
-
-// --- API 요청용 함수 ---
-async function authorizedRequest<T>(
-  method: string,
-  url: string,
-  data?: any,
-  token?: string | null,
-): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  // ✅ Firebase 토큰을 Authorization 헤더에 추가
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-  });
-
-  if (!res.ok) {
-    throw new Error(`Request failed: ${res.status} ${res.statusText}`);
-  }
-
-  return res.json();
-}
-
-// --- 클럽 훅 정의 ---
+/**
+ * ✅ 내 클럽 멤버십 조회 훅
+ * 현재 로그인한 사용자의 클럽 멤버십을 불러온다.
+ */
 export function useMyClubMembership() {
-  const { token, user } = useAuth();
-
-  return useQuery<ClubMembership[]>({
-    queryKey: ["/api/clubs/my-membership", user?.uid],
-    queryFn: async () =>
-      authorizedRequest("GET", "/api/clubs/my-membership", undefined, token),
-    enabled: !!token, // 로그인 및 토큰 존재 시에만 실행
-  });
-}
-
-// 클럽 검색
-export function useClubSearch(region: string) {
-  return useQuery<ClubSearchResult[]>({
-    queryKey: [`/api/clubs/search?region=${encodeURIComponent(region)}`],
-    enabled: !!region,
-  });
-}
-
-// 클럽 멤버 조회
-export function useClubMembers(clubId: number) {
-  return useQuery<ClubMember[]>({
-    queryKey: ["/api/clubs", clubId, "members"],
-    enabled: !!clubId,
-  });
-}
-
-// 클럽 매치 조회
-export function useClubMatches(clubId: number) {
   return useQuery({
-    queryKey: ["/api/clubs", clubId, "matches"],
+    queryKey: ["my-club-membership"],
+    queryFn: async () => {
+      const res = await fetch("/api/clubs/my-membership");
+      if (!res.ok) throw new Error("클럽 정보를 불러올 수 없습니다.");
+      return res.json();
+    },
+  });
+}
+
+/**
+ * ✅ 특정 클럽의 멤버 목록 조회 훅
+ */
+export function useClubMembers(clubId: number) {
+  return useQuery({
+    queryKey: ["club-members", clubId],
+    queryFn: async () => {
+      const res = await fetch(`/api/clubs/${clubId}/members`);
+      if (!res.ok) throw new Error("멤버 정보를 불러오지 못했습니다.");
+      return res.json();
+    },
     enabled: !!clubId,
   });
 }
 
-// 클럽 생성
-export function useCreateClub() {
-  const { token } = useAuth();
-
-  return useMutation({
-    mutationFn: async (clubData: {
-      name: string;
-      region: string;
-      description?: string;
-      logoUrl?: string;
-      bannerUrl?: string;
-      primaryColor?: string;
-    }) => authorizedRequest("POST", "/api/clubs", clubData, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clubs/my-membership"] });
-    },
-  });
-}
-
-// 클럽 가입
-export function useJoinClub() {
-  const { token } = useAuth();
-
-  return useMutation({
-    mutationFn: async (clubId: number) =>
-      authorizedRequest("POST", `/api/clubs/${clubId}/join`, undefined, token),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clubs/my-membership"] });
-    },
-  });
-}
-
-// 클럽 탈퇴
+/**
+ * ✅ 클럽 탈퇴 훅
+ */
 export function useLeaveClub() {
-  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (clubId: number) =>
-      authorizedRequest(
-        "DELETE",
-        `/api/clubs/${clubId}/leave`,
-        undefined,
-        token,
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clubs/my-membership"] });
-    },
-  });
-}
-
-// 클럽 매치 생성
-export function useCreateClubMatch() {
-  const { token } = useAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      clubId,
-      matchData,
-    }: {
-      clubId: number;
-      matchData: {
-        receivingClubId: number;
-        matchDate?: Date;
-        matchLocation?: string;
-        matchType?: "friendly" | "tournament" | "league";
-        notes?: string;
-      };
-    }) =>
-      authorizedRequest(
-        "POST",
-        `/api/clubs/${clubId}/matches`,
-        matchData,
-        token,
-      ),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["/api/clubs", variables.clubId, "matches"],
+    mutationFn: async (clubId: number) => {
+      const res = await fetch(`/api/clubs/${clubId}/leave`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
+      if (!res.ok) throw new Error("클럽 탈퇴에 실패했습니다.");
+      return res.json();
     },
-  });
-}
-
-// 멤버 역할 수정
-export function useUpdateMemberRole() {
-  const { token } = useAuth();
-
-  return useMutation({
-    mutationFn: async ({
-      memberId,
-      role,
-    }: {
-      memberId: number;
-      role: "owner" | "admin" | "member";
-    }) =>
-      authorizedRequest(
-        "PATCH",
-        `/api/clubs/members/${memberId}/role`,
-        { role },
-        token,
-      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clubs"] });
+      toast({
+        title: "클럽 탈퇴 완료",
+        description: "클럽에서 성공적으로 탈퇴했습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["my-club-membership"] });
     },
-  });
-}
-
-// 멤버 제거
-export function useRemoveMember() {
-  const { token } = useAuth();
-
-  return useMutation({
-    mutationFn: async (memberId: number) =>
-      authorizedRequest(
-        "DELETE",
-        `/api/clubs/members/${memberId}`,
-        undefined,
-        token,
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clubs"] });
+    onError: () => {
+      toast({
+        title: "클럽 탈퇴 실패",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     },
   });
 }
