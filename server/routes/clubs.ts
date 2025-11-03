@@ -1,5 +1,5 @@
-import type { Express, Request, Response } from "express";
-import { verifyFirebaseToken } from "../auth.js"; // ✅ 반드시 .js 붙여야 함!
+import type { Express, Request, Response, NextFunction } from "express";
+import { authenticateUser } from "../auth.js"; // ✅ 미들웨어 형태로 변경됨
 import { storage } from "../storage.js";
 
 /**
@@ -13,7 +13,7 @@ export function registerClubRoutes(app: Express) {
    */
   app.get(
     "/api/clubs/my-membership",
-    verifyFirebaseToken,
+    authenticateUser, // ✅ verifyFirebaseToken → authenticateUser 변경
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.uid;
@@ -28,10 +28,14 @@ export function registerClubRoutes(app: Express) {
         const memberships = await storage.getUserClubMemberships(userId);
 
         const clubs = await Promise.all(
-          memberships.map(async (m) => ({
-            membership: m.membership,
-            club: m.club ?? (await storage.getClubById(m.membership.clubId))!,
-          })),
+          memberships.map(async (m) => {
+            const clubId = m.membership?.clubId ?? m.club?.id;
+            const clubData = m.club ?? (await storage.getClubById(clubId))!;
+            return {
+              membership: m.membership,
+              club: clubData,
+            };
+          }),
         );
 
         return res.json({ items: clubs });
@@ -44,11 +48,10 @@ export function registerClubRoutes(app: Express) {
 
   /**
    * ✅ 클럽 단건 조회
-   * @param id 클럽 ID (문자열 그대로 사용)
    */
   app.get(
     "/api/clubs/:id",
-    verifyFirebaseToken,
+    authenticateUser,
     async (req: Request, res: Response) => {
       try {
         const id = req.params.id;
@@ -68,11 +71,10 @@ export function registerClubRoutes(app: Express) {
 
   /**
    * ✅ 클럽 생성 (테스트용 or 관리자용)
-   * - 추후 관리 기능 추가 시 사용
    */
   app.post(
     "/api/clubs",
-    verifyFirebaseToken,
+    authenticateUser,
     async (req: Request, res: Response) => {
       try {
         const { name, region, description, logoUrl, bannerUrl, primaryColor } =
