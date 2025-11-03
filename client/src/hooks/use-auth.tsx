@@ -37,31 +37,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
 
-  // ✅ Google 로그인
   const signInWithGoogle = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
-      if (result.user) {
-        console.log("✅ Google sign-in success:", result.user.email);
-        setUser(result.user);
+      if (!result.user) throw new Error("로그인 실패");
+      setUser(result.user);
 
-        // 🔑 ID 토큰 발급
-        const idToken = await result.user.getIdToken();
-        console.log("🔑 Firebase ID Token:", idToken.slice(0, 20) + "...");
-        setToken(idToken);
-
-        // 🔁 Firestore 동기화
-        await syncUserData(result.user);
-      }
-    } catch (error: any) {
-      console.error("❌ Google login failed:", error);
-      if (error.code === "auth/unauthorized-domain") {
-        alert(
-          `Firebase Error: Domain '${window.location.origin}' is not authorized.\n` +
-            `Please add this domain in Firebase Console → Authentication → Settings → Authorized domains`,
-        );
-      }
-      throw error;
+      const idToken = await result.user.getIdToken(true);
+      setToken(idToken);
+      await syncUserData(result.user);
+    } catch (err) {
+      console.error("❌ Google login failed:", err);
+      throw err;
     }
   };
 
@@ -72,13 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
   };
 
-  // ✅ Firestore 사용자 동기화
   const syncUserData = async (firebaseUser: User) => {
     const userRef = doc(db, "users", firebaseUser.uid);
     const userDoc = await getDoc(userRef);
 
     if (userDoc.exists()) {
-      console.log("✅ Firestore user found:", userDoc.data());
       setAppUser(userDoc.data() as AppUser);
     } else {
       const newUser: AppUser = {
@@ -106,31 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ✅ 로그인 상태 지속 감시 + 토큰 자동 갱신
+  // ✅ 로그인 상태 감시 및 토큰 자동 갱신
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log("🔥 Auth state changed:", firebaseUser.email);
         setUser(firebaseUser);
-        await syncUserData(firebaseUser);
-
-        // 🔄 토큰 즉시 갱신 및 주기적 업데이트
-        const idToken = await firebaseUser.getIdToken();
+        const idToken = await firebaseUser.getIdToken(true);
         setToken(idToken);
-
-        // 자동 갱신 이벤트
-        firebaseUser.getIdTokenResult(true).then((res) => {
-          console.log("🪪 Token refreshed:", res.token.slice(0, 20) + "...");
-        });
+        await syncUserData(firebaseUser);
       } else {
-        console.log("🚪 User logged out");
         setUser(null);
         setAppUser(null);
         setToken(null);
       }
       setLoading(false);
     });
-
     return unsubscribe;
   }, []);
 
@@ -156,8 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
