@@ -13,20 +13,43 @@ export class MemStorage {
   }
 
   createClub(club: any) {
-    this.data.clubs.push(club);
-    return club;
+    const newClub = { ...club, members: club.members || [] };
+    this.data.clubs.push(newClub);
+    return newClub;
   }
 
   ensureDefaultMembership(userId: string) {
-    if (!this.getUserClubMemberships(userId).length) {
-      const defaultClub = { id: "default", members: [userId] };
+    const userClubs = this.getUserClubMemberships(userId);
+    if (userClubs.length === 0) {
+      const defaultClub = {
+        id: `default-${userId}`,
+        name: "기본 클럽",
+        description: "처음 생성된 기본 클럽입니다.",
+        members: [userId],
+      };
       this.data.clubs.push(defaultClub);
       return defaultClub;
     }
+    return userClubs[0].club;
   }
 
+  /**
+   * ✅ 내 클럽 멤버십 목록 조회
+   * - 각 멤버십에 club 데이터 포함
+   */
   getUserClubMemberships(userId: string) {
-    return this.data.clubs.filter((club) => club.members?.includes(userId));
+    const memberships = this.data.clubs
+      .filter((club) => club.members?.includes(userId))
+      .map((club) => ({
+        membership: {
+          clubId: club.id,
+          userId,
+          isActive: true,
+        },
+        club, // ✅ club 필드 포함
+      }));
+
+    return memberships;
   }
 
   // ----- Ranking 관련 -----

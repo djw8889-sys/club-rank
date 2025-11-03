@@ -6,11 +6,11 @@ export function ClubDashboard({ membership }: { membership: any }) {
   const { toast } = useToast();
   const leaveClub = useLeaveClub();
 
-  // ✅ null 방어
+  // ✅ club 데이터 없을 경우 대비
   if (!membership || !membership.club) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        ⚠️ 클럽 데이터를 불러오지 못했습니다.
+        ⚠️ 클럽 정보를 불러오지 못했습니다.
         <br />
         잠시 후 다시 시도해주세요.
       </div>
@@ -37,6 +37,7 @@ export function ClubDashboard({ membership }: { membership: any }) {
             variant="destructive"
             onClick={() => {
               leaveClub.mutate(membership.clubId);
+              toast({ title: "클럽 탈퇴 요청됨" });
             }}
           >
             클럽 탈퇴하기

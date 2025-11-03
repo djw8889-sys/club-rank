@@ -21,14 +21,16 @@ export function registerClubRoutes(app: Express) {
           return res.status(401).json({ error: "인증 정보가 없습니다." });
         }
 
-        // 없으면 기본 클럽 자동 생성 및 가입
+        // ✅ 기본 클럽 자동 생성
         await storage.ensureDefaultMembership(userId);
 
+        // ✅ 멤버십 + 클럽 데이터 함께 반환
         const memberships = await storage.getUserClubMemberships(userId);
+
         const clubs = await Promise.all(
           memberships.map(async (m) => ({
-            membership: m,
-            club: (await storage.getClubById(m.clubId))!,
+            membership: m.membership,
+            club: m.club ?? (await storage.getClubById(m.membership.clubId))!,
           })),
         );
 
