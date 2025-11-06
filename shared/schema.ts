@@ -49,7 +49,7 @@ export const clubMatches = pgTable('club_matches', {
   result: varchar('result', { length: 20 }), // 'requesting_won', 'receiving_won', 'draw'
   requestingScore: integer('requesting_score').default(0), // 신청 클럽 점수
   receivingScore: integer('receiving_score').default(0), // 수신 클럽 점수
-  eloChange: integer('elo_change').default(0), // ELO 변화량 (+/- for requesting club)
+  cpChange: integer('cp_change').default(0), // CP (Club Power) 변화량 (+/- for requesting club)
   // Participant tracking for individual RP calculation
   requestingTeamPlayer1: varchar('requesting_team_player1', { length: 255 }), // 신청팀 선수1 Firebase UID
   requestingTeamPlayer2: varchar('requesting_team_player2', { length: 255 }), // 신청팀 선수2 Firebase UID (복식인 경우)
@@ -379,7 +379,7 @@ export interface ClubMatchFirebase {
   result?: 'requesting_won' | 'receiving_won' | 'draw' | null;
   requestingScore: number;
   receivingScore: number;
-  eloChange: number;
+  cpChange: number;
   notes?: string | null;
   completedAt?: Date | null;
   createdAt: Date;
@@ -397,6 +397,6 @@ export interface InsertClubMatchFirebase {
   result?: 'requesting_won' | 'receiving_won' | 'draw' | null;
   requestingScore?: number;
   receivingScore?: number;
-  eloChange?: number;
+  cpChange?: number;
   notes?: string | null;
 }

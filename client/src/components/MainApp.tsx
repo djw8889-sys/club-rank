@@ -68,10 +68,6 @@ export default function MainApp() {
   }, []);
   const [showPostModal, setShowPostModal] = useState(false);
   const [showChatScreen, setShowChatScreen] = useState(false);
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [chatOpponent, setChatOpponent] = useState<User | null>(null);
-  const [chatMatchId, setChatMatchId] = useState<string>('');
-  const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showProfileEditModal, setShowProfileEditModal] = useState(false);
@@ -245,49 +241,6 @@ export default function MainApp() {
   };
 
 
-  const handleOpenChat = (match: Match) => {
-    if (!appUser) return;
-    
-    const isRequester = match.requesterId === appUser.id;
-    const opponentId = isRequester ? match.targetId : match.requesterId;
-    
-    // Try to find opponent in loaded lists first
-    let opponent = rankingUsers.find(u => u.id === opponentId);
-    
-    if (!opponent) {
-      // Create placeholder opponent if not found in lists
-      opponent = {
-        id: opponentId,
-        username: "로딩 중...",
-        email: "",
-        photoURL: null,
-        ntrp: "0.0",
-        region: "알 수 없음",
-        age: "0",
-        bio: null,
-        availableTimes: [],
-        points: 0,
-        wins: 0,
-        losses: 0,
-        mannerScore: 5,
-        mannerReviewsCount: 0,
-        mannerScoreSum: 0,
-        createdAt: new Date('2025-01-01'),
-        updatedAt: new Date('2025-01-01')
-      };
-    }
-    
-    setChatOpponent(opponent);
-    setChatMatchId(match.id);
-    setShowChatScreen(true);
-  };
-
-  const handleCloseChatScreen = () => {
-    setShowChatScreen(false);
-    setChatOpponent(null);
-    setChatMatchId('');
-    setIsNewChatMode(false);
-  };
 
   if (!appUser) {
     return (

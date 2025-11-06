@@ -1,9 +1,9 @@
 /**
- * ELO Rating System Calculator for Tennis Club Rankings
+ * CP (Club Power) Rating System Calculator for Tennis Club Rankings
  * 
  * Based on standard ELO algorithm with tennis-specific adaptations:
- * - Singles matches: Direct ELO calculation between two players
- * - Doubles matches: Average team ELO vs Average team ELO, then distribute points
+ * - Singles matches: Direct CP calculation between two players
+ * - Doubles matches: Average team CP vs Average team CP, then distribute points
  */
 
 export interface ELOResult {
@@ -21,11 +21,11 @@ export interface TeamELOResult {
 }
 
 /**
- * Standard ELO calculation for singles matches
+ * Standard CP calculation for singles matches
  * @param winnerRating Current rating of winner
  * @param loserRating Current rating of loser
  * @param kFactor K-factor (rating volatility, default 32 for club play)
- * @returns ELO changes and new ratings
+ * @returns CP changes and new ratings
  */
 export function calculateSinglesELO(
   winnerRating: number, 
@@ -49,12 +49,12 @@ export function calculateSinglesELO(
 }
 
 /**
- * ELO calculation for doubles matches
- * Calculates team average ELO, applies standard ELO, then distributes points
+ * CP calculation for doubles matches
+ * Calculates team average CP, applies standard CP, then distributes points
  * @param winningTeam Array of [player1Rating, player2Rating] 
  * @param losingTeam Array of [player1Rating, player2Rating]
  * @param kFactor K-factor for doubles (typically lower than singles)
- * @returns Individual ELO changes for all 4 players
+ * @returns Individual CP changes for all 4 players
  */
 export function calculateDoublesELO(
   winningTeam: [number, number],
