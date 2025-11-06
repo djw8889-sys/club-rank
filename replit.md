@@ -11,7 +11,7 @@ The platform provides club identity customization, automated bracket generation,
 - **Phase 4**: Personal records enhancement and location-based matching optimization
 - **Phase 5**: Complete transition to club-centric platform - removed all personal matching features, rebranded to "ClubRank", applied Smash-style UI (lime green #C7F244 + dark blue #1A2332), 4-tab navigation (내 클럽/랭킹/커뮤니티/내 정보)
 
-**Recent Updates (November 2025 - MVP Complete):**
+**Recent Updates (November 2025 - MVP Complete ✅):**
 - **Railway Deployment Ready**: Full Railway compatibility with proper environment variable configuration
 - **CP Ranking System**: Changed from ELO to CP (Club Power) terminology across all UI, schema, and backend
 - **Personal Matching Removal**: Completely removed PlayerCard, MatchRequestModal, individual matching logic from MainApp
@@ -19,6 +19,11 @@ The platform provides club identity customization, automated bracket generation,
 - **API Response Normalization**: Standardized club membership API responses with null-safe handling
 - **Firebase Admin**: Separated service account credentials into individual environment variables (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY)
 - **Development Environment**: Created server/dev.ts for unified Express + Vite dev server on port 5000
+- **Firebase Graceful Degradation**: Firebase Admin now handles missing credentials gracefully without crashing
+- **Architect Verified**: All MVP completion criteria verified and approved
+
+**Manual Configuration Required:**
+To run the development server, update `package.json` line 7 from `"dev": "cd client && npm run dev"` to `"dev": "tsx server/dev.ts"`. See FINAL_MVP_STATUS.md for complete instructions.
 
 # User Preferences
 

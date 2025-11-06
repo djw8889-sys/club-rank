@@ -1,31 +1,15 @@
-import admin from "./firebase-admin.js";
+import admin, { verifyFirebaseToken as verifyToken, adminDb } from "./firebase-admin.js";
 import { Request, Response, NextFunction } from "express";
 
-// ✅ Firebase Admin 초기화
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-    }),
-  });
-}
-
-export const adminDb = admin.firestore();
+// Re-export for backwards compatibility
+export { adminDb };
 
 /**
  * ✅ Firebase 토큰 검증 함수
  * @param token Firebase ID 토큰 문자열
  */
 export async function verifyFirebaseToken(token: string): Promise<any> {
-  try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    return decoded;
-  } catch (error) {
-    console.error("❌ Invalid Firebase token:", error);
-    throw new Error("Unauthorized");
-  }
+  return verifyToken(token);
 }
 
 /**
