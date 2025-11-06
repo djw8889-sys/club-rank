@@ -46,12 +46,20 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-#### Backend 환경변수:
+#### Backend 환경변수 (Firebase Admin):
 ```
 FIREBASE_PROJECT_ID=your_project_id
-FIREBASE_SERVICE_ACCOUNT={"type":"service_account",...} 
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour_Private_Key_Here\n-----END PRIVATE KEY-----\n"
 ```
-*(전체 Service Account JSON을 한 줄로 붙여넣기)*
+
+**Firebase Service Account 키 얻기:**
+1. Firebase Console > 프로젝트 설정 > 서비스 계정
+2. "새 비공개 키 생성" 클릭 → JSON 파일 다운로드
+3. JSON 파일에서 다음 값 복사:
+   - `project_id` → `FIREBASE_PROJECT_ID`
+   - `client_email` → `FIREBASE_CLIENT_EMAIL`
+   - `private_key` → `FIREBASE_PRIVATE_KEY` (따옴표 포함)
 
 #### Server 환경변수:
 ```

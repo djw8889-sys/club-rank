@@ -11,6 +11,13 @@ The platform provides club identity customization, automated bracket generation,
 - **Phase 4**: Personal records enhancement and location-based matching optimization
 - **Phase 5**: Complete transition to club-centric platform - removed all personal matching features, rebranded to "ClubRank", applied Smash-style UI (lime green #C7F244 + dark blue #1A2332), 4-tab navigation (내 클럽/랭킹/커뮤니티/내 정보)
 
+**Recent Updates (November 2025):**
+- **Railway Deployment Ready**: Full Railway compatibility with proper environment variable configuration
+- **CP Ranking System**: Changed from ELO to CP (Club Power) terminology across all UI
+- **Personal Matching Removal**: Completely removed PlayerCard, MatchRequestModal, individual ranking tabs
+- **API Response Normalization**: Standardized club membership API responses with null-safe handling
+- **Firebase Admin**: Separated service account credentials into individual environment variables (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY)
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -64,9 +71,9 @@ Preferred communication style: Simple, everyday language.
 - **Community Posts**: Real-time feed updates for club announcements and discussions
 
 ## Club Ranking System
-- **Club ELO Rating**: Inter-club competition ranking based on match results
+- **Club CP Rating**: Inter-club competition ranking based on match results (CP = Club Power)
 - **Member Statistics**: Individual performance tracking within club context
-- **Leaderboards**: Dual ranking system - individual player rankings and club rankings
+- **Club Leaderboards**: Club-only ranking system based on inter-club competition results
 - **Competition Analytics**: Detailed statistics by game format (5 types: 남단, 여단, 복식, 혼복, 단식)
 
 # External Dependencies
@@ -101,7 +108,9 @@ Preferred communication style: Simple, everyday language.
 - **Date-fns**: Lightweight date manipulation library
 
 ## Deployment & Production
-- **Replit Integration**: Development environment optimizations
-- **Environment Variables**: Secure configuration management
+- **Railway Deployment**: Full Railway compatibility with GitHub integration
+- **Environment Variables**: Secure configuration management with separated Firebase Admin credentials
+- **Build Process**: Client builds to `server/public/`, server compiles to `server/dist/`
 - **Build Optimization**: Code splitting and asset optimization
 - **Error Handling**: Comprehensive error boundaries and logging
+- **Production Server**: Express serves built client files as static assets
