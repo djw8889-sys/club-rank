@@ -244,7 +244,7 @@ export default function ClubAnalyticsModal({ isOpen, onClose, clubId, clubName, 
                         {match.result}
                       </Badge>
                       <div className="text-sm text-muted-foreground mt-1">
-                        {match.eloChange} ELO
+                        {match.eloChange} CP
                       </div>
                     </div>
                   </div>

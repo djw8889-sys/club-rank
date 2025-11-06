@@ -456,7 +456,7 @@ export default function ClubManagementModal({ isOpen, onClose, membership }: Clu
                   <p className="text-sm text-muted-foreground">
                     📅 2024년 11월 15일<br />
                     📍 올림픽 테니스장<br />
-                    🏆 3-1 승리 (+15 ELO)
+                    🏆 3-1 승리 (+15 CP)
                   </p>
                 </div>
                 
@@ -470,7 +470,7 @@ export default function ClubManagementModal({ isOpen, onClose, membership }: Clu
                   <p className="text-sm text-muted-foreground">
                     📅 2024년 10월 28일<br />
                     📍 강남 스포츠센터<br />
-                    💔 1-3 패배 (-12 ELO)
+                    💔 1-3 패배 (-12 CP)
                   </p>
                 </div>
               </div>

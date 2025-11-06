@@ -70,7 +70,7 @@ export default function LoginScreen() {
             </div>
             <div>
               <p className="font-semibold text-foreground">클럽 간 교류전 & 랭킹</p>
-              <p className="text-xs text-muted-foreground">실시간 ELO 랭킹 시스템</p>
+              <p className="text-xs text-muted-foreground">실시간 CP 랭킹 시스템</p>
             </div>
           </div>
           <div className="flex items-center space-x-4 p-4 bg-gradient-to-r from-accent/10 to-transparent rounded-xl">
