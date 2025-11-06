@@ -134,3 +134,14 @@ export function useAuth() {
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
+import { getAuth } from "firebase/auth";
+
+// ✅ 로그인된 사용자의 Firebase ID Token 확인용 (개발 중에만!)
+getAuth().onAuthStateChanged(async (user) => {
+  if (user) {
+    const token = await user.getIdToken(true);
+    console.log("🔥 [DEBUG] Firebase ID Token:", token);
+  } else {
+    console.log("🚫 [DEBUG] No user logged in.");
+  }
+});

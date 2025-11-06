@@ -105,7 +105,9 @@ export default function MainApp() {
 
   // Fetch user's club matches for club statistics
   const { data: clubMemberships = [] } = useMyClubMembership();
-  const userClubIds = clubMemberships.map(m => m.club.id);
+  const userClubIds = Array.isArray(clubMemberships) 
+    ? clubMemberships.filter(m => m?.club?.id).map(m => m.club.id)
+    : [];
   
   // Fetch actual club statistics from API
   const { data: clubStats, isLoading: clubStatsLoading } = useQuery({

@@ -46,7 +46,7 @@ interface ClubMembership {
 }
 
 interface ClubDashboardProps {
-  membership: ClubMembership;
+  membership: ClubMembership | null | undefined;
 }
 
 const ROLE_LABELS = {
@@ -61,20 +61,33 @@ const ROLE_COLORS = {
   member: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
-export function ClubDashboard({ membership }: ClubDashboardProps) {
+export default function ClubDashboard({ membership }: ClubDashboardProps) {
   const { toast } = useToast();
   const leaveClubMutation = useLeaveClub();
   const [showManagementModal, setShowManagementModal] = useState(false);
   const [showBracketModal, setShowBracketModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
-  const { data: members = [], isLoading: membersLoading } = useClubMembers(
-    membership.club.id,
-  );
+  // ✅ membership이 아직 로드되지 않은 경우
+  if (!membership || !membership.club) {
+    return (
+      <div className="flex justify-center items-center py-10 text-muted-foreground">
+        <LoadingSpinner size="lg" className="mr-2" />
+        클럽 정보를 불러오는 중입니다...
+      </div>
+    );
+  }
 
   const { club } = membership;
-  const userRole = membership.membership.role;
+  const userRole = membership.membership?.role || "member";
   const canLeaveClub = userRole !== "owner"; // 클럽장은 탈퇴 불가
+
+  // ✅ membership.club.id가 있을 때만 호출
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    isError,
+  } = useClubMembers(club?.id);
 
   const handleLeaveClub = async () => {
     try {
@@ -96,6 +109,15 @@ export function ClubDashboard({ membership }: ClubDashboardProps) {
     }
   };
 
+  // ✅ 멤버 조회 실패 시 안전 처리
+  if (isError) {
+    return (
+      <div className="text-center py-10 text-destructive font-medium">
+        ⚠️ 클럽 정보를 불러올 수 없습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* 클럽 헤더 */}
@@ -114,17 +136,19 @@ export function ClubDashboard({ membership }: ClubDashboardProps) {
                 className="text-2xl font-bold mb-2"
                 data-testid="text-club-name"
               >
-                {club.name}
+                {club.name || "이름 없는 클럽"}
               </h2>
               <div className="flex items-center space-x-4 text-white/90">
                 <div className="flex items-center space-x-1">
                   <i className="fas fa-map-marker-alt" />
-                  <span data-testid="text-club-region">{club.region}</span>
+                  <span data-testid="text-club-region">
+                    {club.region || "지역 미설정"}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <i className="fas fa-trophy" />
                   <span data-testid="text-club-points">
-                    {club.rankingPoints || 1000}점
+                    {club.rankingPoints ?? 1000}점
                   </span>
                 </div>
               </div>
@@ -169,8 +193,7 @@ export function ClubDashboard({ membership }: ClubDashboardProps) {
           <div className="text-2xl font-bold text-green-600">
             {club.establishedAt
               ? Math.floor(
-                  (new Date().getTime() -
-                    new Date(club.establishedAt).getTime()) /
+                  (Date.now() - new Date(club.establishedAt).getTime()) /
                     (1000 * 60 * 60 * 24),
                 )
               : 0}
@@ -325,20 +348,17 @@ export function ClubDashboard({ membership }: ClubDashboardProps) {
       <BracketGeneratorModal
         isOpen={showBracketModal}
         onClose={() => setShowBracketModal(false)}
-        clubId={membership.club.id}
+        clubId={club.id}
         members={members}
       />
 
       <ClubAnalyticsModal
         isOpen={showAnalyticsModal}
         onClose={() => setShowAnalyticsModal(false)}
-        clubId={membership.club.id}
-        clubName={membership.club.name}
+        clubId={club.id}
+        clubName={club.name}
         members={members}
       />
     </div>
   );
 }
-
-// ✅ MyClubTabContent.tsx 에서 default import 가능하게 추가
-export default ClubDashboard;

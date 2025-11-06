@@ -23,8 +23,16 @@ export function useMyClubMembership() {
         },
       });
 
-      if (!res.ok) throw new Error("클럽 정보를 불러올 수 없습니다.");
-      return res.json();
+      if (!res.ok) {
+        console.error("❌ [useMyClubMembership] API failed:", res.status, res.statusText);
+        throw new Error("클럽 정보를 불러올 수 없습니다.");
+      }
+
+      const data = await res.json();
+      console.log("✅ [useMyClubMembership] API response:", data);
+      
+      // ✅ API 응답 정규화: { items: [...] } → [...]
+      return data.items || data || [];
     },
   });
 }
