@@ -2,6 +2,7 @@ import { useMyClubMembership } from "@/hooks/use-clubs";
 import LoadingSpinner from "./LoadingSpinner";
 import ClubDashboard from "./MyClubTabContent";
 import { Button } from "@/components/ui/button";
+import ErrorBoundary from "./ErrorBoundary";
 
 export default function MyClubTab() {
   const { data: memberships, isLoading, isError, error } = useMyClubMembership();
@@ -74,7 +75,21 @@ export default function MyClubTab() {
     );
   }
 
-  // ✅ 정상 상태 - 클럽 대시보드 표시
+  // ✅ 정상 상태 - 클럽 대시보드 표시 (Error Boundary로 보호)
   console.log("✅ [COMPONENT DEBUG] Rendering ClubDashboard with membership:", activeMembership);
-  return <ClubDashboard membership={activeMembership} />;
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="flex flex-col justify-center items-center py-16 text-center">
+          <div className="text-destructive mb-4">
+            <i className="fas fa-exclamation-triangle text-4xl" />
+          </div>
+          <p className="text-foreground font-semibold mb-2">클럽 정보 표시 중 오류가 발생했습니다</p>
+          <p className="text-muted-foreground text-sm">페이지를 새로고침해주세요</p>
+        </div>
+      }
+    >
+      <ClubDashboard membership={activeMembership} />
+    </ErrorBoundary>
+  );
 }
