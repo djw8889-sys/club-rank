@@ -50,13 +50,13 @@ if (serviceAccount && !admin.apps.length) {
 
 export const adminDb = serviceAccount ? admin.firestore() : null as any;
 
-// ✅ 토큰 검증 유틸 (개발 모드 fallback 지원)
+// ✅ 토큰 검증 유틸 (개발 모드 fallback 지원, 프로덕션 fail-closed)
 export const verifyFirebaseToken = async (token: string) => {
   console.log("🔍 [FIREBASE ADMIN] verifyFirebaseToken called");
+  console.log("🔍 [FIREBASE ADMIN] Environment:", process.env.NODE_ENV || 'development');
   console.log("🔍 [FIREBASE ADMIN] serviceAccount exists:", !!serviceAccount);
-  console.log("🔍 [FIREBASE ADMIN] token length:", token?.length || 0);
   
-  // 🔥 Production: Firebase Admin이 초기화된 경우 실제 검증
+  // 🔥 Firebase Admin이 초기화된 경우 → 실제 검증
   if (serviceAccount) {
     console.log("✅ [FIREBASE ADMIN] Using real Firebase Admin verification");
     try {
@@ -70,9 +70,17 @@ export const verifyFirebaseToken = async (token: string) => {
     }
   }
   
-  // 🛠️ Development: Firebase Admin 없을 경우 mock 인증 (개발 전용)
-  console.warn("⚠️  [FIREBASE ADMIN] Using MOCK authentication (development mode)");
-  console.warn("⚠️  [FIREBASE ADMIN] Set FIREBASE credentials for production!");
+  // 🚨 PRODUCTION: Firebase 인증 필수 - credentials 없으면 실패
+  if (process.env.NODE_ENV === 'production') {
+    console.error("🚨 [FIREBASE ADMIN] CRITICAL: Firebase credentials missing in production!");
+    console.error("🚨 [FIREBASE ADMIN] Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY");
+    throw new Error("Firebase Admin not initialized - authentication unavailable in production");
+  }
+  
+  // 🛠️ DEVELOPMENT ONLY: Mock 인증 fallback (로컬 개발 전용)
+  console.warn("⚠️  [FIREBASE ADMIN] Using MOCK authentication (DEVELOPMENT MODE ONLY)");
+  console.warn("⚠️  [FIREBASE ADMIN] This will NOT work in production!");
+  console.warn("⚠️  [FIREBASE ADMIN] Set FIREBASE credentials for production deployment!");
   
   try {
     // JWT 토큰에서 payload 추출 (검증 없이)
@@ -82,16 +90,12 @@ export const verifyFirebaseToken = async (token: string) => {
     }
     
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    console.log("🔍 [FIREBASE ADMIN] Mock auth - extracted payload:", {
-      uid: payload.user_id || payload.sub,
-      email: payload.email
-    });
+    console.log("🔍 [FIREBASE ADMIN] Mock auth - extracted uid:", payload.user_id || payload.sub);
     
     return {
       uid: payload.user_id || payload.sub || 'mock-user-id',
       email: payload.email || 'mock@example.com',
       email_verified: true,
-      // Firebase 토큰 표준 필드들
       auth_time: payload.auth_time,
       iat: payload.iat,
       exp: payload.exp,

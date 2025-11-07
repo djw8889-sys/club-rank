@@ -19,7 +19,6 @@ export function useMyClubMembership() {
       console.log("🔍 [CLIENT] User authenticated:", !!user);
       console.log("🔍 [CLIENT] Token exists:", !!token);
       console.log("🔍 [CLIENT] Token length:", token?.length || 0);
-      console.log("🔍 [CLIENT] Token preview:", token ? token.substring(0, 30) + "..." : "N/A");
       
       if (!token) {
         console.error("❌ [CLIENT] No Firebase token available");

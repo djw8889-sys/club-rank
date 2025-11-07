@@ -26,7 +26,7 @@ export async function authenticateUser(
     console.log("🔍 [AUTH MIDDLEWARE] Timestamp:", new Date().toISOString());
     
     const authHeader = req.headers.authorization;
-    console.log("🔍 [AUTH MIDDLEWARE] Authorization header:", authHeader ? `${authHeader.substring(0, 20)}...` : "MISSING");
+    console.log("🔍 [AUTH MIDDLEWARE] Authorization header:", authHeader ? "Bearer [REDACTED]" : "MISSING");
     
     if (!authHeader) {
       console.error("❌ [AUTH MIDDLEWARE] No Authorization header provided");
@@ -46,7 +46,6 @@ export async function authenticateUser(
     const token = parts[1];
     console.log("🔍 [AUTH MIDDLEWARE] Token extracted successfully");
     console.log("🔍 [AUTH MIDDLEWARE] Token length:", token.length);
-    console.log("🔍 [AUTH MIDDLEWARE] Token preview:", token.substring(0, 30) + "...");
     
     console.log("🔍 [AUTH MIDDLEWARE] Calling verifyFirebaseToken...");
     const decoded = await verifyFirebaseToken(token);
