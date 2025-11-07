@@ -1,0 +1,64 @@
+The current issue is that the “내 클럽” (My Club) tab still shows the message “클럽정보를 불러올 수 없습니다” even after previous fixes.  
+Please perform **a full debugging session** to identify and fix the root cause.
+
+### 🧩 FUNCTIONAL FIX (High Priority)
+1. Trace the club membership API call from the client to the backend:
+   - Client: `useMyClubMembership` in `client/src/hooks/use-clubs.tsx`
+   - Server: `/api/clubs/my-membership` in `server/routes/clubs.ts`
+2. Log the following information for debugging:
+   - Current user UID from Firebase auth
+   - API request/response flow between frontend and backend
+   - Any `null` or `undefined` values returned from Firestore
+3. Fix the cause of the “클럽정보를 불러올 수 없습니다” message:
+   - Ensure backend returns a normalized array of memberships (`[]` if empty)
+   - Ensure frontend handles empty/undefined/null states safely
+4. Test the fix end-to-end (login → 내 클럽 탭 → club dashboard)
+
+Also, make sure this fix is **fully compatible with Railway deployment**, meaning:
+- No hardcoded local paths or dev-only configurations
+- Use environment variables properly for Firebase credentials
+
+---
+
+### 🎨 LOGIN PAGE REDESIGN (UI / UX IMPROVEMENT)
+Now update the **login screen design** with the following specifications:
+
+1. **Color Scheme (테친소 스타일)**
+   - Remove gradient backgrounds.
+   - Use a clean, friendly palette similar to tennis social apps:
+     - Background: `#f2f4f6` (soft grayish white)
+     - Primary accent: `#0d924a` (fresh green)
+     - Secondary accent: `#0a6233` (darker green)
+     - Text color: dark gray (`#333333`)
+   - Keep the layout simple and flat, no glossy effects.
+
+2. **Logo Concept (클럽랭크 로고 아이디어)**
+   Suggest and apply 2–3 minimalist logo ideas for “ClubRank”:
+   - ⚪ A tennis ball + ranking arrow (symbolizing competition)
+   - ⚪ A racket + crown motif (leaderboard style)
+   - ⚪ Simple “C↗R” monogram with sporty typeface
+   Implement the chosen logo (temporary SVG or text-based logo in code).
+
+3. **Service Description Area**
+   - Add a section below the login form that explains what ClubRank is.
+   - Use a **contrasting background box** (e.g., white box on soft-gray background).
+   - Example copy:
+     ```
+     클럽랭크는 전국 테니스 동호회를 연결하고,  
+     클럽 간 랭킹 경쟁을 통해 즐거운 커뮤니티 문화를 만듭니다.
+     ```
+   - Use medium-weight typography and center alignment.
+
+---
+
+### 🧪 FINAL CHECK
+After applying all changes:
+- Test the login → club info → dashboard flow.
+- Verify that “내 클럽” no longer shows loading errors.
+- Confirm that the new login page design and logo render properly.
+- Ensure everything runs on both **Replit dev** and **Railway deploy** environments.
+
+Once all steps are complete, generate a summary document named:
+`CLUBRANK_FIX_AND_LOGIN_UI_UPDATE.md`
+describing the debugging results, fixes, and new UI details.
+
