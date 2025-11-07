@@ -22,9 +22,24 @@ export default function MyClubTab() {
     );
   }
 
-  // ⚠️ 에러 상태
-  if (isError) {
-    console.error("❌ [COMPONENT DEBUG] Rendering error state, error:", error);
+  // ⚠️ 데이터 정규화 - 항상 배열로 처리
+  const validMemberships = Array.isArray(memberships) ? memberships : [];
+  console.log("🔍 [COMPONENT DEBUG] validMemberships count:", validMemberships.length);
+  console.log("🔍 [COMPONENT DEBUG] validMemberships data:", JSON.stringify(validMemberships, null, 2));
+  
+  // ✅ 활성 멤버십 찾기 (membership.isActive가 없으면 기본값 true로 간주)
+  const activeMembership = validMemberships.find((m) => {
+    const hasClub = m?.club || m?.clubId;
+    const isActive = m?.membership?.isActive !== false; // undefined도 true로 간주
+    console.log("🔍 [COMPONENT DEBUG] Checking membership:", { hasClub: !!hasClub, isActive, item: m });
+    return hasClub && isActive;
+  });
+  console.log("🔍 [COMPONENT DEBUG] activeMembership found:", !!activeMembership);
+  console.log("🔍 [COMPONENT DEBUG] activeMembership data:", activeMembership);
+
+  // ⚠️ 에러 상태 (데이터가 있으면 에러 무시)
+  if (isError && validMemberships.length === 0) {
+    console.error("[DEBUG] Rendering error UI: memberships =", validMemberships, "isError =", isError);
     return (
       <div className="flex flex-col justify-center items-center py-16 text-center">
         <div className="text-destructive mb-4">
@@ -36,19 +51,9 @@ export default function MyClubTab() {
     );
   }
 
-  // ⚠️ 데이터 정규화 - 항상 배열로 처리
-  const validMemberships = Array.isArray(memberships) ? memberships : [];
-  console.log("🔍 [COMPONENT DEBUG] validMemberships count:", validMemberships.length);
-  console.log("🔍 [COMPONENT DEBUG] validMemberships data:", validMemberships);
-  
-  const activeMembership = validMemberships.find(
-    (m) => m?.membership?.isActive && m?.club
-  );
-  console.log("🔍 [COMPONENT DEBUG] activeMembership:", activeMembership);
-
   // 🚫 클럽 없음 → 안내 메시지
-  if (!activeMembership) {
-    console.log("🔍 [COMPONENT DEBUG] Rendering empty state (no active membership)");
+  if (!activeMembership && validMemberships.length === 0) {
+    console.log("🔍 [COMPONENT DEBUG] Rendering empty state (no memberships)");
     return (
       <div className="flex flex-col justify-center items-center py-16 text-center px-4">
         <div className="text-muted-foreground mb-4">
