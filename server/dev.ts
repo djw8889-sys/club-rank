@@ -35,6 +35,7 @@ async function startDevServer() {
       hmr: {
         port: 5173,
       },
+      allowedHosts: true, // Allow all hosts including Replit domains
     },
     appType: "spa",
   });
