@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { authenticateUser } from "../auth.js";
 import { storage } from "../storage.js";
-import { insertClubDuesSchema, insertClubAttendanceSchema, insertClubMeetingsSchema } from "../../shared/schema.js";
+import { insertClubDuesSchema, insertClubAttendanceSchema, insertClubMeetingsSchema } from "../shared/schema.js";
 
 /**
  * Club Admin 관련 API 라우트 등록
