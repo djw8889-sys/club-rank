@@ -77,12 +77,13 @@ Implemented **mock authentication fallback** for development while maintaining *
 **File: `server/firebase-admin.ts`**
 
 ```typescript
-// ✅ NEW: Dual-mode token verification
+// ✅ NEW: Dual-mode token verification with FAIL-CLOSED security
 export const verifyFirebaseToken = async (token: string) => {
   console.log("🔍 [FIREBASE ADMIN] verifyFirebaseToken called");
+  console.log("🔍 [FIREBASE ADMIN] Environment:", process.env.NODE_ENV || 'development');
   console.log("🔍 [FIREBASE ADMIN] serviceAccount exists:", !!serviceAccount);
   
-  // 🔥 PRODUCTION MODE: Real Firebase Admin verification
+  // 🔥 Firebase Admin initialized → Real verification
   if (serviceAccount) {
     console.log("✅ [FIREBASE ADMIN] Using real Firebase Admin verification");
     try {
@@ -95,9 +96,16 @@ export const verifyFirebaseToken = async (token: string) => {
     }
   }
   
-  // 🛠️ DEVELOPMENT MODE: Mock authentication (no credentials required)
-  console.warn("⚠️  [FIREBASE ADMIN] Using MOCK authentication (development mode)");
-  console.warn("⚠️  [FIREBASE ADMIN] Set FIREBASE credentials for production!");
+  // 🚨 PRODUCTION: Credentials missing → FAIL IMMEDIATELY (fail-closed)
+  if (process.env.NODE_ENV === 'production') {
+    console.error("🚨 [FIREBASE ADMIN] CRITICAL: Firebase credentials missing in production!");
+    console.error("🚨 [FIREBASE ADMIN] Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY");
+    throw new Error("Firebase Admin not initialized - authentication unavailable in production");
+  }
+  
+  // 🛠️ DEVELOPMENT ONLY: Mock authentication (local dev convenience)
+  console.warn("⚠️  [FIREBASE ADMIN] Using MOCK authentication (DEVELOPMENT MODE ONLY)");
+  console.warn("⚠️  [FIREBASE ADMIN] This will NOT work in production!");
   
   try {
     // Extract user info from JWT payload without verification
@@ -107,10 +115,7 @@ export const verifyFirebaseToken = async (token: string) => {
     }
     
     const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    console.log("🔍 [FIREBASE ADMIN] Mock auth - extracted payload:", {
-      uid: payload.user_id || payload.sub,
-      email: payload.email
-    });
+    console.log("🔍 [FIREBASE ADMIN] Mock auth - extracted uid:", payload.user_id || payload.sub);
     
     return {
       uid: payload.user_id || payload.sub || 'mock-user-id',
@@ -129,6 +134,23 @@ export const verifyFirebaseToken = async (token: string) => {
   }
 };
 ```
+
+**🔒 SECURITY: Fail-Closed Behavior**
+
+The authentication now **fails closed** in production:
+
+| Environment | Credentials | Behavior |
+|-------------|-------------|----------|
+| Production | ✅ Present | Real Firebase verification |
+| Production | ❌ Missing | **FAIL** - All auth requests rejected |
+| Development | ✅ Present | Real Firebase verification |
+| Development | ❌ Missing | Mock auth (dev convenience only) |
+
+**Why This Is Secure**:
+- Production misconfigurations (missing env vars) → immediate auth failure
+- No silent fallback to insecure mock mode in production
+- Mock auth explicitly gated by `NODE_ENV !== 'production'`
+- Railway automatically sets `NODE_ENV=production`
 
 ### How It Works
 
