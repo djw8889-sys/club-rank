@@ -31,8 +31,10 @@ export function useMyClubMembership() {
       const data = await res.json();
       console.log("✅ [useMyClubMembership] API response:", data);
       
-      // ✅ API 응답 정규화: { items: [...] } → [...]
-      return data.items || data || [];
+      // ✅ API 응답 정규화: 항상 배열 형태로 반환
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data?.items)) return data.items;
+      return [];
     },
   });
 }

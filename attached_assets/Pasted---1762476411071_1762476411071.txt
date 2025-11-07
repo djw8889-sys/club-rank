@@ -1,0 +1,151 @@
+아래 작업을 단계별로 수행해주세요. 목표는 “내 클럽 탭에서 ‘클럽정보를 불러오는 중입니다’ 메시지에서 멈추는 문제”를 완전히 해결하는 것입니다.
+
+✅ 목표
+- 로그인 후 /api/clubs/my-membership 호출 시 올바른 응답을 받고
+- 클럽이 존재하면 ClubDashboard로 진입,
+- 없으면 “가입된 클럽이 없습니다” 화면으로 전환되도록 수정합니다.
+- 오류나 undefined 상태에서 멈추지 않도록 전체 방어 로직을 강화합니다.
+
+---
+
+🧩 1️⃣ useMyClubMembership 수정 (client/src/hooks/use-clubs.tsx)
+
+- API 응답이 `{ items: [...] }` 형태일 수도 있고, 단순 배열 `[]`일 수도 있습니다.
+- 항상 배열 형태로 정규화하여 반환하도록 수정합니다.
+- 서버 응답이 비어있을 때 빈 배열을 반환하도록 보장합니다.
+
+코드 예시:
+```ts
+export function useMyClubMembership() {
+  const { token, user } = useAuth();
+
+  return useQuery({
+    queryKey: ["my-club-membership"],
+    enabled: !!token && !!user,
+    queryFn: async () => {
+      if (!token) throw new Error("Firebase 인증 토큰이 없습니다.");
+
+      const res = await fetch("/api/clubs/my-membership", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("클럽 정보를 불러올 수 없습니다.");
+      const json = await res.json();
+
+      // ✅ 응답 정규화: 항상 배열 반환
+      if (Array.isArray(json)) return json;
+      if (Array.isArray(json.items)) return json.items;
+      return [];
+    },
+  });
+}
+🧩 2️⃣ MyClubTabContent.tsx 수정
+
+useMyClubMembership의 결과를 기반으로 클럽이 존재하면 ClubDashboard로 진입,
+
+없으면 “가입된 클럽이 없습니다” 안내를 보여줍니다.
+
+undefined 또는 null 상태에서 무한 로딩되지 않도록 합니다.
+
+코드 예시:
+
+ts
+코드 복사
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useMyClubMembership } from "@/hooks/use-clubs";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import ClubDashboard from "@/components/MyClubTabContent"; // 혹은 올바른 경로 확인
+
+export default function MyClubTabContent() {
+  const navigate = useNavigate();
+  const { data: memberships, isLoading, isError } = useMyClubMembership();
+
+  useEffect(() => {
+    if (isError) {
+      console.error("클럽 정보를 불러오는 중 오류 발생");
+    }
+  }, [isError]);
+
+  // ⏳ 로딩 상태
+  if (isLoading) {
+    return <LoadingSpinner message="클럽 정보를 불러오는 중입니다." />;
+  }
+
+  // ⚠️ 데이터 정규화
+  const validMemberships = Array.isArray(memberships) ? memberships : [];
+  const activeMembership = validMemberships.find(
+    (m) => m?.membership?.isActive && m?.club
+  );
+
+  // 🚫 클럽 없음 → 클럽 검색 페이지로 이동
+  if (!activeMembership) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        가입된 클럽이 없습니다.
+        <br />
+        <button
+          onClick={() => navigate("/clubs/search")}
+          className="mt-4 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90"
+        >
+          클럽 찾아보기
+        </button>
+      </div>
+    );
+  }
+
+  // ✅ 정상 상태
+  return <ClubDashboard membership={activeMembership} />;
+}
+🧩 3️⃣ 서버 API 점검 (server/routes/clubs.ts)
+
+/api/clubs/my-membership 응답이 항상 유효하도록 보장합니다.
+
+null이 발생할 경우에도 안전하게 빈 배열을 반환하도록 수정합니다.
+
+예시:
+
+ts
+코드 복사
+router.get("/my-membership", authenticateUser, async (req, res) => {
+  try {
+    const memberships = await storage.getUserMemberships(req.user.uid);
+    const result = await Promise.all(
+      memberships.map(async (m) => ({
+        membership: m,
+        club: (await storage.getClubById(m.clubId)) || null,
+      }))
+    );
+
+    res.json({ items: result.filter((x) => x.club !== null) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "클럽 정보를 불러올 수 없습니다." });
+  }
+});
+🧩 4️⃣ 확인 방법
+
+Replit에서 “Run” 클릭 후 웹 앱 실행
+
+Google 로그인 → 콘솔 Network 탭 → /api/clubs/my-membership 응답 확인
+
+응답이 { items: [...] } 또는 [] 형태로 오는지 확인
+
+클럽이 있으면 ClubDashboard 정상 진입
+
+없으면 “가입된 클럽이 없습니다” 메시지 표시 + “클럽 찾아보기” 버튼 노출
+
+🧩 5️⃣ 추가 요청 (중요)
+
+“내 정보” 탭의 잔존 개인 매칭 기능 (보유 포인트, 등급, 시즌 순위, 포인트 충전)도 함께 제거해주세요.
+
+관련된 hook (use-points.tsx) 및 컴포넌트 (ProfileTabContent.tsx, PointChargeModal.tsx 등) 내 로직도 완전히 삭제합니다.
+
+이 작업을 모두 적용한 후에는:
+✅ 클럽정보 로드 실패 문제 해결
+✅ 내 정보 탭 개인 기능 완전 제거
+✅ 클럽 중심 UX 완성 (로그인 → 클럽 진입 or 생성)
+✅ Railway로 배포 시에도 동일 구조로 안정 작동

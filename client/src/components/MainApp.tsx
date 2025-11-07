@@ -13,17 +13,14 @@ import BottomNavigation from "./BottomNavigation";
 import LoadingSpinner from "./LoadingSpinner";
 import PostCreateModal from "./PostCreateModal";
 import ChatScreen from "./ChatScreen";
-import TierProgressCard from "./TierProgressCard";
 import AdminPanel from "./AdminPanel";
 import AdminPromotion from "./AdminPromotion";
 import FeedbackModal from "./FeedbackModal";
 import ClubRankLogo from "./ClubRankLogo";
 import ProfileEditModal from "./ProfileEditModal";
-import PointChargeModal from "./PointChargeModal";
 import ShopModal from "./ShopModal";
 import UserProfileModal from "./UserProfileModal";
-import MyClubTabContent from "./MyClubTabContent";
-import { useMyClubMembership } from "@/hooks/use-clubs";
+import MyClubTab from "./MyClubTab";
 
 export default function MainApp() {
   const { appUser, logout } = useAuth();
@@ -71,7 +68,6 @@ export default function MainApp() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showProfileEditModal, setShowProfileEditModal] = useState(false);
-  const [showPointChargeModal, setShowPointChargeModal] = useState(false);
   const [showShopModal, setShowShopModal] = useState(false);
   const [showUserProfileModal, setShowUserProfileModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -90,33 +86,10 @@ export default function MainApp() {
     loading: postsLoading
   } = useFirestoreCollection<Post>('posts', [], 'createdAt', 'desc');
 
-  // Fetch user's club matches for club statistics
-  const { data: clubMemberships = [] } = useMyClubMembership();
-  const userClubIds = Array.isArray(clubMemberships) 
-    ? clubMemberships.filter(m => m?.club?.id).map(m => m.club.id)
-    : [];
-  
-  // Fetch actual club statistics from API
-  const { data: clubStats, isLoading: clubStatsLoading } = useQuery({
-    queryKey: ['user-club-stats', appUser?.id, userClubIds],
-    queryFn: async () => {
-      if (!appUser?.id || userClubIds.length === 0) return null;
-      
-      const response = await fetch(`/api/clubs/${userClubIds[0]}/user/${appUser.id}/stats`);
-      
-      if (!response.ok) throw new Error('Failed to fetch club stats');
-      return response.json();
-    },
-    enabled: !!appUser?.id && userClubIds.length > 0
-  });
-
-  // Calculate actual club statistics from real data
-  const clubMatchesWins = clubStats?.statsByFormat ? 
-    Object.values(clubStats.statsByFormat).reduce((sum: number, stats: any) => sum + (stats.wins || 0), 0) : 0;
-  const clubMatchesLosses = clubStats?.statsByFormat ? 
-    Object.values(clubStats.statsByFormat).reduce((sum: number, stats: any) => sum + (stats.losses || 0), 0) : 0;
-  const clubMeetingsAttended = clubStats?.totalMatches || 0;
-  const clubMeetingsMissed = Math.max(0, Math.floor(clubMeetingsAttended / 4)); // Estimate based on activity
+  // Calculate basic club statistics (simplified - no individual stats)
+  const clubMatchesWins = 0;
+  const clubMatchesLosses = 0;
+  const clubMeetingsAttended = 0;
 
   const handleTabChange = (tab: string, header: string) => {
     setActiveTab(tab);
@@ -290,9 +263,8 @@ export default function MainApp() {
         {/* Online Players Tab */}
         {/* My Club Tab */}
         <div className={`tab-content ${activeTab === 'my-club-tab' ? 'active' : 'hidden'}`}>
-          <MyClubTabContent />
+          <MyClubTab />
         </div>
-
         {/* Individual Matching Tab - REMOVED */}
         {/* Club Search Tab */}
         <div className={`tab-content ${activeTab === 'club-search-tab' ? 'active' : 'hidden'}`}>
@@ -570,23 +542,6 @@ export default function MainApp() {
             <AdminPromotion />
           </div>
 
-          {/* Tier Progress Card */}
-          <div className="p-4">
-            <TierProgressCard user={appUser} />
-          </div>
-
-          {/* Stats Cards */}
-          <div className="px-4 grid grid-cols-2 gap-4">
-            <div className="bg-background rounded-xl p-4 text-center border border-border">
-              <div className="text-2xl font-bold text-primary" data-testid="text-user-points-display">{appUser.points}</div>
-              <div className="text-xs text-muted-foreground">보유 포인트</div>
-            </div>
-            <div className="bg-background rounded-xl p-4 text-center border border-border">
-              <div className="text-2xl font-bold text-accent">-</div>
-              <div className="text-xs text-muted-foreground">이번 시즌 순위</div>
-            </div>
-          </div>
-
           {/* Club Records Summary */}
           <div className="p-4">
             <div className="bg-background rounded-xl border border-border p-4">
@@ -620,18 +575,12 @@ export default function MainApp() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">클럽 활동 통계</span>
                   <div className="flex space-x-4">
-                    {clubStatsLoading ? (
-                      <span>📊 로딩 중...</span>
-                    ) : (
-                      <>
-                        <span>📊 총 {clubMeetingsAttended}경기</span>
-                        <span>🏆 승률 {
-                          clubMeetingsAttended > 0 
-                            ? Math.round((clubMatchesWins / clubMeetingsAttended) * 100)
-                            : 0
-                        }%</span>
-                      </>
-                    )}
+                    <span>📊 총 {clubMeetingsAttended}경기</span>
+                    <span>🏆 승률 {
+                      clubMeetingsAttended > 0 
+                        ? Math.round((clubMatchesWins / clubMeetingsAttended) * 100)
+                        : 0
+                    }%</span>
                   </div>
                 </div>
               </div>
@@ -648,18 +597,6 @@ export default function MainApp() {
               <span className="flex items-center">
                 <i className="fas fa-user-edit w-6 mr-3 text-primary" />
                 프로필 수정
-              </span>
-              <i className="fas fa-chevron-right text-muted-foreground" />
-            </button>
-            
-            <button 
-              onClick={() => setShowPointChargeModal(true)}
-              className="w-full text-left p-4 bg-background rounded-xl border border-border flex justify-between items-center hover:bg-muted transition-colors" 
-              data-testid="button-charge-points"
-            >
-              <span className="flex items-center">
-                <i className="fas fa-coins w-6 mr-3 text-accent" />
-                포인트 충전
               </span>
               <i className="fas fa-chevron-right text-muted-foreground" />
             </button>
@@ -761,11 +698,6 @@ export default function MainApp() {
       <ProfileEditModal 
         isOpen={showProfileEditModal} 
         onClose={() => setShowProfileEditModal(false)} 
-      />
-
-      <PointChargeModal 
-        isOpen={showPointChargeModal} 
-        onClose={() => setShowPointChargeModal(false)} 
       />
 
       <ShopModal 
