@@ -30,7 +30,7 @@ export function registerClubRoutes(app: Express) {
         const clubs = await Promise.all(
           memberships.map(async (m) => {
             const clubId = m.membership?.clubId ?? m.club?.id;
-            const clubData = m.club ?? (await storage.getClubById(clubId))!;
+            const clubData = m.club ?? (await storage.getClubById(clubId));
             return {
               membership: m.membership,
               club: clubData,
@@ -38,7 +38,10 @@ export function registerClubRoutes(app: Express) {
           }),
         );
 
-        return res.json({ items: clubs });
+        // ✅ Filter out null clubs for safety
+        const validClubs = clubs.filter((c) => c.club !== null && c.club !== undefined);
+
+        return res.json({ items: validClubs });
       } catch (error: any) {
         console.error("❌ [GET /api/clubs/my-membership] failed:", error);
         res.status(500).json({ error: "클럽정보 로드 실패" });
