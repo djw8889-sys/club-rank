@@ -4,6 +4,7 @@ import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { registerClubRoutes } from "./routes/clubs.js";
 import { registerRankingRoutes } from "./routes/rankings.js";
+import { registerClubAdminRoutes } from "./routes/club-admin.js";
 
 async function startDevServer() {
   const app = express();
@@ -26,6 +27,7 @@ async function startDevServer() {
   // API 라우트 등록
   registerClubRoutes(app);
   registerRankingRoutes(app);
+  registerClubAdminRoutes(app);
 
   // Vite 개발 서버 설정
   const vite = await createViteServer({

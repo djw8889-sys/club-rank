@@ -20,6 +20,7 @@ The platform provides club identity customization, automated bracket generation,
 - **Firebase Admin**: Separated service account credentials into individual environment variables (PROJECT_ID, CLIENT_EMAIL, PRIVATE_KEY)
 - **Development Environment**: Created server/dev.ts for unified Express + Vite dev server on port 5000
 - **Firebase Graceful Degradation**: Firebase Admin now handles missing credentials gracefully without crashing
+- **Club Admin Features Restored**: Added comprehensive club management system with dues tracking, attendance management, and regular meeting scheduling
 - **Architect Verified**: All MVP completion criteria verified and approved
 
 **Manual Configuration Required:**
@@ -56,6 +57,9 @@ Preferred communication style: Simple, everyday language.
 - **Users Table**: Comprehensive player profiles including tennis skill level (NTRP), region, age, bio, and club membership data
 - **Clubs Table**: Club profiles with identity customization, member rosters, and competition history
 - **Club Matches Table**: Inter-club competition records with game format tracking and automated bracket generation
+- **Club Dues Table**: Member dues tracking with monthly billing and payment status management
+- **Club Attendance Table**: Event attendance tracking with customizable status options
+- **Club Meetings Table**: Regular meeting scheduling with participant management and capacity limits
 - **Posts Table**: Community features for user-generated content
 - **Chats Table**: Real-time messaging system for club communications
 
@@ -82,6 +86,13 @@ Preferred communication style: Simple, everyday language.
 - **Member Statistics**: Individual performance tracking within club context
 - **Club Leaderboards**: Club-only ranking system based on inter-club competition results
 - **Competition Analytics**: Detailed statistics by game format (5 types: 남단, 여단, 복식, 혼복, 단식)
+
+## Club Administration Features
+- **회비 관리 (Dues Management)**: Complete dues tracking system with monthly billing, payment status (paid/pending/overdue), and automated notifications
+- **출석 관리 (Attendance Tracking)**: Event attendance management with status tracking (present/absent/late/excused) and historical records
+- **정기모임 관리 (Regular Meetings)**: Meeting scheduling with participant management, capacity limits, join/leave functionality, and status tracking (scheduled/completed/cancelled)
+- **API Routes**: All club admin features exposed via RESTful API at `/api/dues`, `/api/attendance`, `/api/meetings` with Firebase authentication middleware
+- **Date Serialization**: Proper handling of date fields with `z.coerce.date()` for JSON compatibility between frontend and backend
 
 # External Dependencies
 

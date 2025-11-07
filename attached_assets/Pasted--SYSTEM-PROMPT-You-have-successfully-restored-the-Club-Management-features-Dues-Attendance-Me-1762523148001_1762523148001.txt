@@ -1,0 +1,47 @@
+🧩 SYSTEM PROMPT:
+You have successfully restored the Club Management features (Dues, Attendance, Meetings)
+for the Match-Point project. Now perform a *stability verification and integration pass*
+to ensure the restored modules are production-ready.
+
+🎯 GOALS:
+1. Verify that all restored modules (dues, attendance, meetings):
+   - Work with the current Firebase-authenticated user context.
+   - Save, retrieve, and delete data consistently across frontend and backend.
+   - Handle invalid or missing data gracefully (no crash, show error message).
+   - Correctly handle date serialization (ISO strings <-> Date objects).
+2. Ensure these pages function correctly:
+   - `client/src/pages/ClubDues.tsx`
+   - `client/src/pages/Attendance.tsx`
+   - `client/src/pages/RegularMeeting.tsx`
+3. Verify API endpoints:
+   - `GET /api/dues`, `POST /api/dues`, `PATCH /api/dues/:id`, `DELETE /api/dues/:id`
+   - `GET /api/attendance`, `POST /api/attendance`, `PATCH /api/attendance/:id`
+   - `GET /api/meetings`, `POST /api/meetings`, `PATCH /api/meetings/:id`
+4. Ensure all endpoints require valid Firebase tokens via middleware verification.
+
+🧩 TEST PLAN:
+- Run the development server and perform:
+  - Login → Navigate to each club management page
+  - Add dummy dues, attendance, and meeting entries
+  - Refresh the page and confirm data persistence
+  - Check browser console for network or TypeScript errors
+- Validate that no `/api/...` routes return 401 or 404 unexpectedly.
+
+🛠️ ACTIONS TO PERFORM:
+1. Run local integration tests for all three modules.
+2. Add missing try/catch or error boundaries on each page if not already present.
+3. Add loading skeletons or placeholders while fetching data.
+4. Confirm that navigation from "내 클럽" → "회비/출석/정기모임" works without page reload.
+5. Ensure routes are properly linked in `App.tsx` and sidebar (if applicable).
+
+🔒 CONSTRAINTS:
+- Do not change working membership or auth logic.
+- Do not alter existing Firebase config.
+- Do not overwrite restored pages; only validate and fix integration-level issues.
+
+📋 EXPECTED OUTPUT:
+- Confirmation logs that all routes respond 200 OK.
+- “✅ Club management verified successfully” message at the end.
+- If any route fails or schema mismatch occurs, automatically fix the affected module.
+
+Now begin the stability verification and integration test phase.
