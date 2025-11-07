@@ -14,15 +14,21 @@ export function useMyClubMembership() {
     queryKey: ["my-club-membership"],
     enabled: !!token && !!user,
     queryFn: async () => {
-      console.log("🔍 [CLIENT DEBUG] useMyClubMembership - token exists:", !!token);
-      console.log("🔍 [CLIENT DEBUG] useMyClubMembership - user exists:", !!user);
+      console.log("\n🔍 [CLIENT] ================================================");
+      console.log("🔍 [CLIENT] useMyClubMembership query starting");
+      console.log("🔍 [CLIENT] User authenticated:", !!user);
+      console.log("🔍 [CLIENT] Token exists:", !!token);
+      console.log("🔍 [CLIENT] Token length:", token?.length || 0);
+      console.log("🔍 [CLIENT] Token preview:", token ? token.substring(0, 30) + "..." : "N/A");
       
       if (!token) {
-        console.error("❌ [CLIENT DEBUG] No Firebase token");
+        console.error("❌ [CLIENT] No Firebase token available");
         throw new Error("Firebase 인증 토큰이 없습니다.");
       }
 
-      console.log("🔍 [CLIENT DEBUG] Fetching /api/clubs/my-membership...");
+      console.log("🔍 [CLIENT] Sending request to /api/clubs/my-membership");
+      console.log("🔍 [CLIENT] Headers: Authorization: Bearer [TOKEN]");
+      
       const res = await fetch("/api/clubs/my-membership", {
         headers: {
           "Content-Type": "application/json",
@@ -30,12 +36,17 @@ export function useMyClubMembership() {
         },
       });
 
-      console.log("🔍 [CLIENT DEBUG] Response status:", res.status, res.statusText);
+      console.log("🔍 [CLIENT] Response received");
+      console.log("🔍 [CLIENT] Status:", res.status, res.statusText);
+      console.log("🔍 [CLIENT] Headers:", Object.fromEntries(res.headers.entries()));
       
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("❌ [CLIENT DEBUG] API failed:", res.status, res.statusText);
-        console.error("❌ [CLIENT DEBUG] Error body:", errorText);
+        console.error("\n❌ [CLIENT] ================================================");
+        console.error("❌ [CLIENT] API request FAILED");
+        console.error("❌ [CLIENT] Status:", res.status, res.statusText);
+        console.error("❌ [CLIENT] Response body:", errorText);
+        console.error("❌ [CLIENT] ================================================\n");
         throw new Error("클럽 정보를 불러올 수 없습니다.");
       }
 

@@ -1,0 +1,66 @@
+We’re facing a persistent issue where the “내 클럽” tab fails with the message “클럽정보를 불러올 수 없습니다.”  
+From the network logs, the `/api/clubs/my-membership` endpoint returns:  
+`{"error": "Invalid or expired token"}`  
+and the browser console shows repeated `401 (Unauthorized)` errors even though Firebase login succeeds and a valid ID token is printed in logs.
+
+Here’s the debugging task I need you to perform step-by-step:
+
+---
+
+### 1️⃣ Diagnose the Root Cause
+Please trace the full authentication flow:
+- Check the client hook `useMyClubMembership` — ensure the `Authorization` header is sent as `Bearer <token>`.
+- Check the server middleware (likely `verifyFirebaseToken` in `server/auth.ts` or `server/middleware/auth.ts`):
+  - Confirm it correctly imports and initializes the Firebase Admin SDK.
+  - Confirm it reads the token from `Authorization` header and verifies it using `admin.auth().verifyIdToken()`.
+  - Confirm the environment variable for Firebase credentials is correctly loaded (`FIREBASE_ADMIN_KEY` or similar).
+
+Add detailed console logs to show:
+- The raw header received by the server.
+- Whether `verifyIdToken()` is called.
+- If verification fails, log the specific error code/message (e.g., “auth/argument-error”, “auth/id-token-expired”).
+
+---
+
+### 2️⃣ Fix the Verification Flow
+Once the cause is found:
+- If Firebase Admin SDK initialization is missing or incorrect, fix it using proper credentials loading.
+- If the token is being truncated or malformed, ensure the full token string is passed to the backend.
+- If the frontend calls the wrong domain or lacks `withCredentials`, fix the fetch call in `useMyClubMembership`.
+- Make sure CORS headers and HTTPS redirects are not stripping the header.
+
+---
+
+### 3️⃣ Test Locally
+After fixing:
+- Log in using Firebase (Google)
+- Ensure `/api/clubs/my-membership` now returns a valid club array or empty list (HTTP 200)
+- Verify no “Invalid or expired token” error occurs.
+
+---
+
+### 4️⃣ Ensure Railway Deployment Compatibility
+Once verified locally:
+- Confirm the Firebase Admin credentials (`FIREBASE_ADMIN_KEY`, `FIREBASE_PROJECT_ID`, etc.) are correctly configured as Railway environment variables.
+- Ensure the production build (`npm run build` + `npm start`) uses the same auth initialization logic.
+
+---
+
+### 5️⃣ (Bonus) Improve Login UX
+While debugging, also slightly improve the login page UI:
+- Use the new tennis-green (#0d924a) flat design (no gradient).
+- Add a centered ClubRank logo (simple text + tennis ball icon).
+- Add a white card under the logo explaining the service’s 3 features: “랭킹 시스템”, “교류전 관리”, “데이터 분석”.
+- Ensure responsiveness on mobile.
+
+---
+
+### ✅ Deliverables
+- Fixed authentication (no more 401)
+- Logs proving successful token verification
+- Updated login screen per new color/design guidelines
+- Compatible with Railway deployment (server verifies Firebase token in production)
+
+---
+
+Please begin by logging and inspecting the Authorization header and the result of `verifyIdToken()` on the backend before making changes.
