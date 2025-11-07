@@ -17,20 +17,27 @@ export function registerClubRoutes(app: Express) {
     async (req: Request, res: Response) => {
       try {
         const userId = (req as any).user?.uid;
+        console.log("🔍 [DEBUG] /api/clubs/my-membership - userId:", userId);
+        
         if (!userId) {
+          console.log("❌ [DEBUG] No userId found in request");
           return res.status(401).json({ error: "인증 정보가 없습니다." });
         }
 
         // ✅ 기본 클럽 자동 생성
+        console.log("🔍 [DEBUG] Ensuring default membership for userId:", userId);
         await storage.ensureDefaultMembership(userId);
 
         // ✅ 멤버십 + 클럽 데이터 함께 반환
         const memberships = await storage.getUserClubMemberships(userId);
+        console.log("🔍 [DEBUG] Raw memberships from storage:", JSON.stringify(memberships, null, 2));
 
         const clubs = await Promise.all(
           memberships.map(async (m) => {
             const clubId = m.membership?.clubId ?? m.club?.id;
+            console.log("🔍 [DEBUG] Processing membership - clubId:", clubId);
             const clubData = m.club ?? (await storage.getClubById(clubId));
+            console.log("🔍 [DEBUG] Club data for clubId", clubId, ":", clubData ? "found" : "null");
             return {
               membership: m.membership,
               club: clubData,
@@ -40,10 +47,13 @@ export function registerClubRoutes(app: Express) {
 
         // ✅ Filter out null clubs for safety
         const validClubs = clubs.filter((c) => c.club !== null && c.club !== undefined);
+        console.log("🔍 [DEBUG] Valid clubs count:", validClubs.length);
+        console.log("🔍 [DEBUG] Sending response:", JSON.stringify({ items: validClubs }, null, 2));
 
         return res.json({ items: validClubs });
       } catch (error: any) {
         console.error("❌ [GET /api/clubs/my-membership] failed:", error);
+        console.error("❌ [DEBUG] Error stack:", error.stack);
         res.status(500).json({ error: "클럽정보 로드 실패" });
       }
     },

@@ -14,8 +14,15 @@ export function useMyClubMembership() {
     queryKey: ["my-club-membership"],
     enabled: !!token && !!user,
     queryFn: async () => {
-      if (!token) throw new Error("Firebase 인증 토큰이 없습니다.");
+      console.log("🔍 [CLIENT DEBUG] useMyClubMembership - token exists:", !!token);
+      console.log("🔍 [CLIENT DEBUG] useMyClubMembership - user exists:", !!user);
+      
+      if (!token) {
+        console.error("❌ [CLIENT DEBUG] No Firebase token");
+        throw new Error("Firebase 인증 토큰이 없습니다.");
+      }
 
+      console.log("🔍 [CLIENT DEBUG] Fetching /api/clubs/my-membership...");
       const res = await fetch("/api/clubs/my-membership", {
         headers: {
           "Content-Type": "application/json",
@@ -23,18 +30,36 @@ export function useMyClubMembership() {
         },
       });
 
+      console.log("🔍 [CLIENT DEBUG] Response status:", res.status, res.statusText);
+      
       if (!res.ok) {
-        console.error("❌ [useMyClubMembership] API failed:", res.status, res.statusText);
+        const errorText = await res.text();
+        console.error("❌ [CLIENT DEBUG] API failed:", res.status, res.statusText);
+        console.error("❌ [CLIENT DEBUG] Error body:", errorText);
         throw new Error("클럽 정보를 불러올 수 없습니다.");
       }
 
       const data = await res.json();
-      console.log("✅ [useMyClubMembership] API response:", data);
+      console.log("✅ [CLIENT DEBUG] API raw response:", JSON.stringify(data, null, 2));
+      console.log("✅ [CLIENT DEBUG] Response type:", typeof data);
+      console.log("✅ [CLIENT DEBUG] Is Array?", Array.isArray(data));
+      console.log("✅ [CLIENT DEBUG] Has items?", Array.isArray(data?.items));
       
       // ✅ API 응답 정규화: 항상 배열 형태로 반환
-      if (Array.isArray(data)) return data;
-      if (Array.isArray(data?.items)) return data.items;
-      return [];
+      let normalized;
+      if (Array.isArray(data)) {
+        normalized = data;
+        console.log("✅ [CLIENT DEBUG] Normalized as direct array, length:", normalized.length);
+      } else if (Array.isArray(data?.items)) {
+        normalized = data.items;
+        console.log("✅ [CLIENT DEBUG] Normalized from items property, length:", normalized.length);
+      } else {
+        normalized = [];
+        console.warn("⚠️ [CLIENT DEBUG] Unexpected response format, returning empty array");
+      }
+      
+      console.log("✅ [CLIENT DEBUG] Final normalized data:", normalized);
+      return normalized;
     },
   });
 }

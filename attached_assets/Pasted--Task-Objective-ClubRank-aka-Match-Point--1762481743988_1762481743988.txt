@@ -1,0 +1,73 @@
+🧩 Task Objective
+현재 ClubRank(aka Match Point) 프로젝트의 “내 클럽” 탭에서
+“클럽 정보를 불러올 수 없습니다.”라는 메시지가 지속적으로 발생하고 있습니다.
+
+이 문제를 **레플릿 환경에서 직접 디버깅**하여 원인을 추적하고,
+수정된 버전이 **Railway 배포 환경에서도 동일하게 작동**하도록 호환성을 확보하세요.
+
+---
+
+🔍 Context
+- Frontend: React + Vite (client/)
+- Backend: Express + Firebase Admin (server/)
+- Combined Dev Entrypoint: `server/dev.ts`
+- API in question: `GET /api/clubs/my-membership`
+- Auth: Firebase ID Token (Authorization Bearer header)
+- Current deployment target: **Railway**
+
+---
+
+🎯 Diagnostic + Compatibility Goals
+1. **Root Cause Discovery (자동 디버깅)**  
+   - “클럽 정보를 불러올 수 없습니다”가 표시되는 이유를 정확히 찾아내세요.  
+   - 서버 응답, 클라이언트 파싱, 인증 문제 중 어디서 끊기는지 구분하세요.
+
+2. **Server/Client Synchronization**  
+   - `server/routes/clubs.ts` 의 응답 구조를 콘솔에 로깅 (`/api/clubs/my-membership`)  
+   - `useMyClubMembership` 훅에서 해당 응답을 받아 처리하는 로직 확인  
+   - 응답 구조가 `{ items: [...] }` 혹은 `[]` 등 일관된 형태인지 확인  
+   - 빈 배열이 반환되는 경우, 왜 그런지 로깅 추가 (`console.log("No membership found for user:", userId)`)
+
+3. **Firebase Credential Compatibility**  
+   - Firebase Admin SDK 초기화가 Firebase 환경변수 없을 때도 안전하게 동작하도록 유지  
+   - Railway에서도 Firebase JSON이 환경변수로 전달될 수 있도록 `.env` 구조를 확인  
+   - 로컬(레플릿)에서는 mock 데이터로 graceful fallback 되도록
+
+4. **Railway Deployment Readiness**  
+   - 레플릿에서 확인한 수정사항이 Railway에 그대로 반영되도록 구조화  
+   - `server/dev.ts`와 Railway 환경(`PORT`, `NODE_ENV`)이 충돌하지 않게 확인  
+   - `.env`와 `.env.production` 변수를 분리 (Firebase / Railway 각각 대응)
+
+---
+
+🧪 Expected Debugging Process
+Step 1️⃣ — 서버 API 응답 확인  
+```js
+console.log("[DEBUG] /api/clubs/my-membership result:", result);
+Step 2️⃣ — 클라이언트 훅(useMyClubMembership)에서 응답 데이터 구조 로깅
+Step 3️⃣ — “클럽정보를 불러올 수 없습니다” 문구가 표시될 조건을 출력
+Step 4️⃣ — 원인을 ① 서버 응답 누락 ② 인증 실패 ③ 잘못된 파싱 중 어디인지 자동 분류
+Step 5️⃣ — 서버/클라이언트 코드가 Railway에서도 동일하게 동작할지 검증
+
+🧠 Output Format
+레플릿이 반드시 다음 내용을 포함하여 보고하세요:
+
+🧩 Root Cause Analysis (RCA) — 문제의 근본 원인
+
+📜 Evidence Logs — 서버/클라이언트 콘솔 로그 증거
+
+🔧 Proposed Fix — 최소 수정으로 해결하는 방법
+
+🚀 Railway Compatibility Check — 배포 시 주의할 설정 (env, 포트, 인증 등)
+
+✅ Verification Plan — 로컬/배포 환경에서 정상동작을 검증하는 절차
+
+⚙️ Notes
+
+절대 “추측 수정”하지 말고, 실제 로그를 통해 근거를 제시하세요.
+
+Firebase가 비활성화된 레플릿 환경에서도 서버가 정상 기동되어야 합니다.
+
+서버 포트는 5000으로 고정, Railway 배포 시 PORT 환경변수로 자동 조정되도록 유지하세요.
+
+디버깅 완료 후, 수정사항이 Railway에서도 동일하게 동작하는지까지 검증하세요.
