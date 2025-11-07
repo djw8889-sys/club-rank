@@ -5,6 +5,9 @@ export class MemStorage {
     clubs: [],
     matches: [],
     rankings: [],
+    dues: [],
+    attendance: [],
+    meetings: [],
   };
 
   // ----- Club 관련 -----
@@ -160,6 +163,192 @@ export class MemStorage {
 
   addMatchParticipants(participants: any[]) {
     this.data.matches.push(...participants);
+  }
+
+  // ----- Dues 관련 (회비) -----
+  /**
+   * ✅ 클럽 회비 목록 조회
+   */
+  getClubDues(clubId: string | number, userId?: string) {
+    return this.data.dues.filter(
+      (d) => d.clubId == clubId && (!userId || d.userId === userId),
+    );
+  }
+
+  /**
+   * ✅ 회비 생성
+   */
+  createDues(dues: any) {
+    const newDues = {
+      ...dues,
+      id: this.data.dues.length + 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.data.dues.push(newDues);
+    return newDues;
+  }
+
+  /**
+   * ✅ 회비 상태 업데이트
+   */
+  updateDuesStatus(duesId: number, status: string, paidAt?: Date) {
+    const dues = this.data.dues.find((d) => d.id === duesId);
+    if (dues) {
+      dues.status = status;
+      if (paidAt) dues.paidAt = paidAt;
+      dues.updatedAt = new Date();
+    }
+    return dues;
+  }
+
+  /**
+   * ✅ 회비 삭제
+   */
+  deleteDues(duesId: number) {
+    const index = this.data.dues.findIndex((d) => d.id === duesId);
+    if (index !== -1) {
+      this.data.dues.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  // ----- Attendance 관련 (출석) -----
+  /**
+   * ✅ 클럽 출석 기록 조회
+   */
+  getClubAttendance(clubId: string | number, eventDate?: Date) {
+    return this.data.attendance.filter(
+      (a) =>
+        a.clubId == clubId &&
+        (!eventDate ||
+          new Date(a.eventDate).toDateString() === eventDate.toDateString()),
+    );
+  }
+
+  /**
+   * ✅ 출석 기록 생성
+   */
+  createAttendance(attendance: any) {
+    const newAttendance = {
+      ...attendance,
+      id: this.data.attendance.length + 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.data.attendance.push(newAttendance);
+    return newAttendance;
+  }
+
+  /**
+   * ✅ 출석 상태 업데이트
+   */
+  updateAttendanceStatus(attendanceId: number, status: string, notes?: string) {
+    const attendance = this.data.attendance.find((a) => a.id === attendanceId);
+    if (attendance) {
+      attendance.status = status;
+      if (notes !== undefined) attendance.notes = notes;
+      attendance.updatedAt = new Date();
+    }
+    return attendance;
+  }
+
+  /**
+   * ✅ 출석 기록 삭제
+   */
+  deleteAttendance(attendanceId: number) {
+    const index = this.data.attendance.findIndex((a) => a.id === attendanceId);
+    if (index !== -1) {
+      this.data.attendance.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  // ----- Meetings 관련 (정기모임) -----
+  /**
+   * ✅ 클럽 모임 목록 조회
+   */
+  getClubMeetings(clubId: string | number) {
+    return this.data.meetings.filter((m) => m.clubId == clubId);
+  }
+
+  /**
+   * ✅ 모임 단건 조회
+   */
+  getMeetingById(meetingId: number) {
+    return this.data.meetings.find((m) => m.id === meetingId);
+  }
+
+  /**
+   * ✅ 모임 생성
+   */
+  createMeeting(meeting: any) {
+    const newMeeting = {
+      ...meeting,
+      id: this.data.meetings.length + 1,
+      participants: meeting.participants || [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.data.meetings.push(newMeeting);
+    return newMeeting;
+  }
+
+  /**
+   * ✅ 모임 참가
+   */
+  joinMeeting(meetingId: number, userId: string) {
+    const meeting = this.data.meetings.find((m) => m.id === meetingId);
+    if (meeting && !meeting.participants.includes(userId)) {
+      if (
+        !meeting.maxParticipants ||
+        meeting.participants.length < meeting.maxParticipants
+      ) {
+        meeting.participants.push(userId);
+        meeting.updatedAt = new Date();
+        return meeting;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * ✅ 모임 참가 취소
+   */
+  leaveMeeting(meetingId: number, userId: string) {
+    const meeting = this.data.meetings.find((m) => m.id === meetingId);
+    if (meeting) {
+      meeting.participants = meeting.participants.filter(
+        (p: string) => p !== userId,
+      );
+      meeting.updatedAt = new Date();
+    }
+    return meeting;
+  }
+
+  /**
+   * ✅ 모임 업데이트
+   */
+  updateMeeting(meetingId: number, updates: any) {
+    const meeting = this.data.meetings.find((m) => m.id === meetingId);
+    if (meeting) {
+      Object.assign(meeting, updates, { updatedAt: new Date() });
+    }
+    return meeting;
+  }
+
+  /**
+   * ✅ 모임 삭제
+   */
+  deleteMeeting(meetingId: number) {
+    const index = this.data.meetings.findIndex((m) => m.id === meetingId);
+    if (index !== -1) {
+      this.data.meetings.splice(index, 1);
+      return true;
+    }
+    return false;
   }
 }
 

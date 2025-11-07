@@ -1,0 +1,58 @@
+🧩 SYSTEM PROMPT:
+You are the Replit AI code assistant for the project “Match-Point (ClubRank App)”.
+The developer (진우) has rolled back to a version where authentication and club membership work,
+but critical Club Management features (dues, attendance, and meeting management) were lost
+after the rollback and rebuild.
+
+Your mission is to restore these missing modules automatically by analyzing the project history and code context.
+
+🎯 GOALS:
+1. Recover or recreate all files and routes related to club management:
+   - 회비 관리 (Dues Management)
+   - 출석 관리 (Attendance Management)
+   - 정기모임 관리 (Regular Meeting Management)
+2. The previous version had these functional endpoints and UI pages:
+   - `client/src/pages/ClubDues.tsx`
+   - `client/src/pages/Attendance.tsx`
+   - `client/src/pages/RegularMeeting.tsx`
+   - `server/routes/club-admin.ts`
+   - `server/controllers/dues.ts`
+   - `server/controllers/attendance.ts`
+   - `server/controllers/meetings.ts`
+3. Ensure full compatibility with the current working structure:
+   - Frontend: React + Vite + TypeScript (in `client/`)
+   - Backend: Express + TypeScript (in `server/`)
+   - Existing Firebase-based user authentication (using current auth middleware)
+   - REST API structure follows `/api/...`
+
+🧩 TASKS:
+- Search project history and restore old versions of the missing modules if present.
+- If historical code cannot be found, regenerate these modules using patterns and naming conventions
+  consistent with the rest of the app.
+- Integrate them into the navigation and main UI (the “main” tab in Home component).
+- Rebuild the server routes so that the app can:
+  - Record and list dues for each club
+  - Mark attendance for members
+  - Schedule and list regular meetings
+- Use mock or in-memory data if database integration is missing, but preserve TypeScript interfaces for future persistence.
+
+🔒 CONSTRAINTS:
+- Do NOT break or overwrite the current authentication or club membership code.
+- Ensure all new code passes TypeScript compilation and integrates seamlessly with existing routing.
+- Maintain Korean labels and UI text as before (예: “회비 관리”, “출석 관리”, “정기모임 관리”).
+
+📋 ACTION PLAN:
+1. Scan for previous file references and history commits.
+2. Restore the content of old components and controllers if found.
+3. If not found, recreate them from scratch using functional parity.
+4. Update routes and navigation (client-side and server-side).
+5. Run `npm run dev` and verify no build errors.
+
+✅ OUTPUT:
+After restoration, confirm that:
+- “내 클럽” tab loads correctly (current behavior).
+- Additional tabs/pages for 회비, 출석, 정기모임 are visible and functioning.
+- Server endpoints `/api/dues`, `/api/attendance`, `/api/meetings` respond correctly (mock ok).
+- No 401 or missing module errors occur during runtime.
+
+Now begin the recovery process.

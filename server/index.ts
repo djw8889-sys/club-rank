@@ -5,6 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { registerClubRoutes } from "./routes/clubs.js";
 import { registerRankingRoutes } from "./routes/rankings.js";
+import { registerClubAdminRoutes } from "./routes/club-admin.js";
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use(express.static(publicDir));
 // ✅ API 라우트
 registerClubRoutes(app);
 registerRankingRoutes(app);
+registerClubAdminRoutes(app);
 
 // ✅ SPA 라우팅
 app.get("*", (_, res) => {

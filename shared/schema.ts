@@ -88,6 +88,49 @@ export const matchParticipants = pgTable('match_participants', {
   createdAt: timestamp('created_at').defaultNow()
 });
 
+// Club Dues table - Track membership fees and payment status
+export const clubDues = pgTable('club_dues', {
+  id: serial('id').primaryKey(),
+  clubId: integer('club_id').notNull(), // 클럽 ID
+  userId: varchar('user_id', { length: 255 }).notNull(), // 회원 Firebase UID
+  amount: integer('amount').notNull(), // 회비 금액
+  dueMonth: varchar('due_month', { length: 7 }).notNull(), // '2024-12' 형식
+  status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending', 'paid', 'overdue'
+  paidAt: timestamp('paid_at'), // 납부 일시
+  notes: text('notes'), // 비고
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Club Attendance table - Track member attendance at events
+export const clubAttendance = pgTable('club_attendance', {
+  id: serial('id').primaryKey(),
+  clubId: integer('club_id').notNull(), // 클럽 ID
+  userId: varchar('user_id', { length: 255 }).notNull(), // 회원 Firebase UID
+  eventDate: timestamp('event_date').notNull(), // 행사 날짜
+  eventName: varchar('event_name', { length: 200 }).notNull(), // 행사명
+  status: varchar('status', { length: 20 }).notNull().default('absent'), // 'present', 'absent', 'late', 'excused'
+  notes: text('notes'), // 비고
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Club Meetings table - Regular meeting schedules and information
+export const clubMeetings = pgTable('club_meetings', {
+  id: serial('id').primaryKey(),
+  clubId: integer('club_id').notNull(), // 클럽 ID
+  title: varchar('title', { length: 200 }).notNull(), // 모임 제목
+  description: text('description'), // 모임 설명
+  meetingDate: timestamp('meeting_date').notNull(), // 모임 날짜
+  location: varchar('location', { length: 200 }), // 장소
+  maxParticipants: integer('max_participants'), // 최대 인원
+  participants: text('participants').array(), // 참가자 Firebase UID 배열
+  status: varchar('status', { length: 20 }).notNull().default('scheduled'), // 'scheduled', 'completed', 'cancelled'
+  createdBy: varchar('created_by', { length: 255 }).notNull(), // 생성자 Firebase UID
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
 // =============================================================================
 // ZOD SCHEMAS FOR VALIDATION
 // =============================================================================
@@ -136,12 +179,44 @@ export const insertMatchParticipantsSchema = createInsertSchema(matchParticipant
   createdAt: true
 });
 
+// Insert schema for club dues
+export const insertClubDuesSchema = createInsertSchema(clubDues).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  status: z.enum(['pending', 'paid', 'overdue']).default('pending')
+});
+
+// Insert schema for club attendance
+export const insertClubAttendanceSchema = createInsertSchema(clubAttendance).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  status: z.enum(['present', 'absent', 'late', 'excused']).default('absent'),
+  eventDate: z.coerce.date() // ✅ Coerce string to Date for JSON compatibility
+});
+
+// Insert schema for club meetings
+export const insertClubMeetingsSchema = createInsertSchema(clubMeetings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  status: z.enum(['scheduled', 'completed', 'cancelled']).default('scheduled'),
+  meetingDate: z.coerce.date() // ✅ Coerce string to Date for JSON compatibility
+});
+
 // Insert types from schemas
 export type InsertClub = z.infer<typeof insertClubSchema>;
 export type InsertClubMember = z.infer<typeof insertClubMemberSchema>;
 export type InsertClubMatch = z.infer<typeof insertClubMatchSchema>;
 export type InsertUserRankingPoints = z.infer<typeof insertUserRankingPointsSchema>;
 export type InsertMatchParticipants = z.infer<typeof insertMatchParticipantsSchema>;
+export type InsertClubDues = z.infer<typeof insertClubDuesSchema>;
+export type InsertClubAttendance = z.infer<typeof insertClubAttendanceSchema>;
+export type InsertClubMeetings = z.infer<typeof insertClubMeetingsSchema>;
 
 // Select types from tables
 export type Club = typeof clubs.$inferSelect;
@@ -149,6 +224,9 @@ export type ClubMember = typeof clubMembers.$inferSelect;
 export type ClubMatch = typeof clubMatches.$inferSelect;
 export type UserRankingPoints = typeof userRankingPoints.$inferSelect;
 export type MatchParticipants = typeof matchParticipants.$inferSelect;
+export type ClubDues = typeof clubDues.$inferSelect;
+export type ClubAttendance = typeof clubAttendance.$inferSelect;
+export type ClubMeetings = typeof clubMeetings.$inferSelect;
 
 // =============================================================================
 // FIREBASE FIRESTORE INTERFACES (Legacy - transitioning to Drizzle)
