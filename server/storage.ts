@@ -8,8 +8,13 @@ export class MemStorage {
   };
 
   // ----- Club 관련 -----
+  /**
+   * ✅ 클럽 ID로 조회
+   * - Flexible comparison: supports both string and numeric IDs
+   * - Handles route params (always strings) matching numeric DB IDs
+   */
   getClubById(id: string | number) {
-    return this.data.clubs.find((club) => club.id === id);
+    return this.data.clubs.find((club) => club.id == id); // ✅ Use loose equality
   }
 
   createClub(club: any) {
@@ -56,9 +61,11 @@ export class MemStorage {
 
   /**
    * ✅ 클럽 멤버 목록 조회
+   * - Accepts both numeric and string club IDs (e.g., "default-userId")
+   * - Uses loose equality to match route params (strings) with numeric IDs
    */
-  getClubMembers(clubId: number) {
-    const club = this.data.clubs.find((c) => c.id === clubId || c.id === `default-${clubId}`);
+  getClubMembers(clubId: string | number) {
+    const club = this.data.clubs.find((c) => c.id == clubId); // ✅ Use loose equality
     if (!club || !club.members) {
       return [];
     }
@@ -76,9 +83,11 @@ export class MemStorage {
 
   /**
    * ✅ 클럽 탈퇴
+   * - Accepts both numeric and string club IDs (e.g., "default-userId")
+   * - Uses loose equality to match route params (strings) with numeric IDs
    */
-  leaveClub(userId: string, clubId: number) {
-    const club = this.data.clubs.find((c) => c.id === clubId);
+  leaveClub(userId: string, clubId: string | number) {
+    const club = this.data.clubs.find((c) => c.id == clubId); // ✅ Use loose equality
     if (club && club.members) {
       club.members = club.members.filter((id: string) => id !== userId);
     }

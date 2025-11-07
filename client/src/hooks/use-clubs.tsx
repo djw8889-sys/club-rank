@@ -76,25 +76,38 @@ export function useMyClubMembership() {
 
 /**
  * ✅ 특정 클럽의 멤버 목록 조회 훅
+ * - Supports both numeric and string club IDs (e.g., "default-userId")
  */
-export function useClubMembers(clubId: number) {
+export function useClubMembers(clubId: string | number | undefined) {
   const { token } = useAuth();
 
   return useQuery({
     queryKey: ["club-members", clubId],
     enabled: !!clubId && !!token,
     queryFn: async () => {
+      console.log(`🔍 [useClubMembers] Fetching members for clubId: ${clubId}`);
       const res = await fetch(`/api/clubs/${clubId}/members`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("멤버 정보를 불러오지 못했습니다.");
-      return res.json();
+      
+      console.log(`🔍 [useClubMembers] Response status: ${res.status}`);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`❌ [useClubMembers] Failed to fetch members:`, errorText);
+        throw new Error("멤버 정보를 불러오지 못했습니다.");
+      }
+      
+      const data = await res.json();
+      console.log(`✅ [useClubMembers] Successfully fetched ${data.length} members`);
+      return data;
     },
   });
 }
 
 /**
  * ✅ 클럽 탈퇴 훅
+ * - Supports both numeric and string club IDs (e.g., "default-userId")
  */
 export function useLeaveClub() {
   const queryClient = useQueryClient();
@@ -102,7 +115,7 @@ export function useLeaveClub() {
   const { token } = useAuth();
 
   return useMutation({
-    mutationFn: async (clubId: number) => {
+    mutationFn: async (clubId: string | number) => {
       const res = await fetch(`/api/clubs/${clubId}/leave`, {
         method: "POST",
         headers: {

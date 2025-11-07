@@ -84,22 +84,23 @@ export function registerClubRoutes(app: Express) {
 
   /**
    * ✅ 클럽 멤버 목록 조회
+   * - Supports both numeric and string club IDs (e.g., "default-userId")
    */
   app.get(
     "/api/clubs/:id/members",
     authenticateUser,
     async (req: Request, res: Response) => {
       try {
-        const clubId = parseInt(req.params.id, 10);
+        const clubId = req.params.id; // ✅ Keep as string to support default-${userId}
         
-        if (isNaN(clubId)) {
+        if (!clubId) {
           return res.status(400).json({ error: "유효하지 않은 클럽 ID입니다." });
         }
 
         console.log(`🔍 [GET /api/clubs/${clubId}/members] Fetching members`);
 
         // ✅ 클럽 존재 여부 확인
-        const club = await storage.getClubById(clubId.toString());
+        const club = await storage.getClubById(clubId);
         if (!club) {
           console.log(`❌ [GET /api/clubs/${clubId}/members] Club not found`);
           return res.status(404).json({ error: "클럽을 찾을 수 없습니다." });
@@ -120,16 +121,17 @@ export function registerClubRoutes(app: Express) {
 
   /**
    * ✅ 클럽 탈퇴
+   * - Supports both numeric and string club IDs (e.g., "default-userId")
    */
   app.post(
     "/api/clubs/:id/leave",
     authenticateUser,
     async (req: Request, res: Response) => {
       try {
-        const clubId = parseInt(req.params.id, 10);
+        const clubId = req.params.id; // ✅ Keep as string to support default-${userId}
         const userId = (req as any).user?.uid;
 
-        if (isNaN(clubId)) {
+        if (!clubId) {
           return res.status(400).json({ error: "유효하지 않은 클럽 ID입니다." });
         }
 
