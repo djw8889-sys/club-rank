@@ -86,8 +86,15 @@ export default function ClubDashboard({ membership }: ClubDashboardProps) {
   const {
     data: members = [],
     isLoading: membersLoading,
-    isError,
+    isError: membersError,
   } = useClubMembers(club?.id);
+
+  console.log("🔍 [ClubDashboard] Members fetch state:", {
+    membersLoading,
+    membersError,
+    membersCount: members.length,
+    clubId: club?.id,
+  });
 
   const handleLeaveClub = async () => {
     try {
@@ -109,14 +116,8 @@ export default function ClubDashboard({ membership }: ClubDashboardProps) {
     }
   };
 
-  // ✅ 멤버 조회 실패 시 안전 처리
-  if (isError) {
-    return (
-      <div className="text-center py-10 text-destructive font-medium">
-        ⚠️ 클럽 정보를 불러올 수 없습니다.
-      </div>
-    );
-  }
+  // ✅ 멤버 조회 실패는 무시하고 계속 렌더링 (멤버 섹션만 에러 표시)
+  // DO NOT hide entire dashboard just because members fetch failed
 
   return (
     <div className="space-y-6">
@@ -217,9 +218,14 @@ export default function ClubDashboard({ membership }: ClubDashboardProps) {
           <div className="flex justify-center py-8">
             <LoadingSpinner size="lg" />
           </div>
+        ) : membersError ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <i className="fas fa-exclamation-circle text-destructive mr-2" />
+            멤버 정보를 불러올 수 없습니다
+          </div>
         ) : members.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            멤버 정보를 불러올 수 없습니다
+            아직 클럽 멤버가 없습니다
           </div>
         ) : (
           <div className="space-y-3">

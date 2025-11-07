@@ -45,11 +45,43 @@ export class MemStorage {
           clubId: club.id,
           userId,
           isActive: true,
+          role: club.owner === userId ? "owner" : "member",
+          joinedAt: new Date(),
         },
         club, // ✅ club 필드 포함
       }));
 
     return memberships;
+  }
+
+  /**
+   * ✅ 클럽 멤버 목록 조회
+   */
+  getClubMembers(clubId: number) {
+    const club = this.data.clubs.find((c) => c.id === clubId || c.id === `default-${clubId}`);
+    if (!club || !club.members) {
+      return [];
+    }
+
+    // Return member list with basic info
+    return club.members.map((userId: string, index: number) => ({
+      id: index + 1,
+      userId,
+      clubId,
+      role: club.owner === userId ? "owner" : "member",
+      joinedAt: new Date(),
+      isActive: true,
+    }));
+  }
+
+  /**
+   * ✅ 클럽 탈퇴
+   */
+  leaveClub(userId: string, clubId: number) {
+    const club = this.data.clubs.find((c) => c.id === clubId);
+    if (club && club.members) {
+      club.members = club.members.filter((id: string) => id !== userId);
+    }
   }
 
   // ----- Ranking 관련 -----

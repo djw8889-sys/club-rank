@@ -1,0 +1,74 @@
+We’re still seeing the “클럽 정보를 불러올 수 없습니다” message even though the data pipeline is 100% working.
+
+Please perform a full-spectrum diagnostic and stabilization pass across both frontend and server.  
+Here is the detailed evidence from live client and API logs ⬇️
+
+---
+
+### 🔍 Core facts from the latest run
+
+✅ Firebase initialized successfully  
+✅ Auth token issued and verified (Firebase ID Token logged)  
+✅ `/api/clubs/my-membership` returned 200 OK with correct payload  
+✅ Normalized data length: 1  
+✅ activeMembership found: true  
+✅ ClubDashboard rendering triggered with valid membership object  
+❌ Yet UI still shows: “클럽 정보를 불러올 수 없습니다”
+
+---
+
+### 🧠 Likely root causes to investigate (in order)
+
+1. **UI rendering / state synchronization**
+   - The `MyClubTab` or `ClubDashboard` component may have a conditional check that still falls through
+     to the “error” or “empty” state even when `activeMembership` exists.
+   - Look for mismatched keys like:
+     ```tsx
+     if (!activeMembership || !activeMembership.club) return <ErrorView .../>
+     ```
+     when `activeMembership.club` exists but is not truthy due to shallow comparison or stale state.
+
+2. **Error boundary or Suspense fallback**
+   - If any image (e.g. `boringavatars.com`), lazy import, or async component throws an error during render,
+     it might trigger a React ErrorBoundary fallback that displays the generic “클럽 정보를 불러올 수 없습니다”.
+   - Add `onError` handlers to `<img>` tags or wrap `ClubDashboard` children in a try/catch boundary.
+
+3. **State race condition**
+   - Logs show multiple consecutive renders where `isLoading: true` then `false`, but view state (`currentView`)
+     might not re-sync properly with query completion.
+   - Check that the query hook (`useMyClubMembership`) properly sets `isLoading` to `false` before the parent
+     decides on what to render.
+
+4. **Localization fallback logic**
+   - Confirm that the error message “클럽 정보를 불러올 수 없습니다” isn’t triggered by default
+     when `data.items` exists but `data.items.length === 0` check is mis-evaluated (e.g., due to re-render
+     when React Query invalidates cache).
+
+5. **Visual asset / network issue**
+   - Past run showed `net::ERR_CERT_DATE_INVALID` from `source.boringavatars.com`.
+     Replace with a local avatar or robust fallback to ensure that failed image loads
+     never crash rendering.
+
+---
+
+### 🧩 Please verify and harden the following:
+
+- [ ] Add `console.log` before rendering `<ClubDashboard>` to confirm props actually reach it
+- [ ] Wrap all potential render failures (`img`, `map`, `undefined access`) in try/catch or error boundaries
+- [ ] Ensure that the error message component renders **only when** `isError === true` or `!activeMembership`
+- [ ] Replace or safeguard any external avatar/image source
+- [ ] Test both with valid club and empty club list to confirm fallback correctness
+- [ ] Deploy with NODE_ENV=production to ensure consistent behavior
+
+---
+
+### ✅ Goal
+
+After the fix:
+- The app should **always** show the user’s club dashboard if the API returns valid club data
+- No UI fallback (“클럽 정보를 불러올 수 없습니다”) should appear unless the API truly fails
+- Rendering must not break even if image URLs or assets fail to load
+
+---
+
+Attach this log reference for debugging:

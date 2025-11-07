@@ -83,6 +83,76 @@ export function registerClubRoutes(app: Express) {
   );
 
   /**
+   * ✅ 클럽 멤버 목록 조회
+   */
+  app.get(
+    "/api/clubs/:id/members",
+    authenticateUser,
+    async (req: Request, res: Response) => {
+      try {
+        const clubId = parseInt(req.params.id, 10);
+        
+        if (isNaN(clubId)) {
+          return res.status(400).json({ error: "유효하지 않은 클럽 ID입니다." });
+        }
+
+        console.log(`🔍 [GET /api/clubs/${clubId}/members] Fetching members`);
+
+        // ✅ 클럽 존재 여부 확인
+        const club = await storage.getClubById(clubId.toString());
+        if (!club) {
+          console.log(`❌ [GET /api/clubs/${clubId}/members] Club not found`);
+          return res.status(404).json({ error: "클럽을 찾을 수 없습니다." });
+        }
+
+        // ✅ 클럽 멤버 조회
+        const members = await storage.getClubMembers(clubId);
+        console.log(`✅ [GET /api/clubs/${clubId}/members] Found ${members.length} members`);
+
+        return res.json(members);
+      } catch (error: any) {
+        console.error("❌ [GET /api/clubs/:id/members] failed:", error);
+        console.error("❌ [DEBUG] Error stack:", error.stack);
+        res.status(500).json({ error: "멤버 조회 실패" });
+      }
+    },
+  );
+
+  /**
+   * ✅ 클럽 탈퇴
+   */
+  app.post(
+    "/api/clubs/:id/leave",
+    authenticateUser,
+    async (req: Request, res: Response) => {
+      try {
+        const clubId = parseInt(req.params.id, 10);
+        const userId = (req as any).user?.uid;
+
+        if (isNaN(clubId)) {
+          return res.status(400).json({ error: "유효하지 않은 클럽 ID입니다." });
+        }
+
+        if (!userId) {
+          return res.status(401).json({ error: "인증 정보가 없습니다." });
+        }
+
+        console.log(`🔍 [POST /api/clubs/${clubId}/leave] User ${userId} leaving club`);
+
+        // ✅ 클럽 탈퇴 처리
+        await storage.leaveClub(userId, clubId);
+        console.log(`✅ [POST /api/clubs/${clubId}/leave] User successfully left club`);
+
+        return res.json({ success: true, message: "클럽 탈퇴 완료" });
+      } catch (error: any) {
+        console.error("❌ [POST /api/clubs/:id/leave] failed:", error);
+        console.error("❌ [DEBUG] Error stack:", error.stack);
+        res.status(500).json({ error: "클럽 탈퇴 실패" });
+      }
+    },
+  );
+
+  /**
    * ✅ 클럽 생성 (테스트용 or 관리자용)
    */
   app.post(
